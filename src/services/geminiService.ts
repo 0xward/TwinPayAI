@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { 
   TwinPayMode, 
   UserProfile, 
@@ -29,39 +29,75 @@ You MUST ALWAYS return valid JSON only. No extra text.
 
 BLOCKCHAIN CONTEXT:
 * Network: Celo Mainnet
-* Wallet: MiniPay, Metamask, Phantom (Celo Support)
-* Tokens: CELO, cUSD, USDT, cEUR
-* Transactions must be simple, safe, and user-confirmed unless auto_mode is enabled
+* Tokens: CELO (0x471EcE3750Da237f93B8E339c536989b8978a438), cUSD, USDT, cEUR
+* Transactions must be simple, safe, and user-confirmed unless auto_mode is enabled.
 
-SECURITY AUDIT (Address Verification):
-* You MUST analyze the "recipient" address. 
-* "address_valid": true if it looks like a standard Hex address (42 chars, starts with 0x).
-* "suspicious_score": 
-    0: Known safe format.
-    50: Unusual pattern or zero address.
-    100: Obviously invalid or malicious-looking.
-* "risk_summary": A very brief note about the address safety (e.g., "Address format valid", "Warning: Checksum mismatch", "Suspicious: High-risk pattern").
-
-STRICT OUTPUT RULES:
-* Always valid JSON
-* No missing fields
-* No null values (use 0 or "")
-* No extra keys outside schema
-* Keep reasoning short (max 1 sentence)
-* Confidence between 0 and 1
-
-GLOBAL LOGIC:
-* Conservative → minimize spending (strict limits)
-* Balanced → reasonable spending
-* Aggressive → flexible spending
-* Compare price vs budget
-* Never suggest negative values
-
-FAILSAFE:
-* If recipient missing → set execute=false
-* If price invalid → set execute=false
-* Always return safe transaction plan
+LOGIC CORE:
+* Analyze if the purchase aligns with the monthly budget and chosen personality (Conservative/Balanced/Aggressive).
+* For 'decision' mode, audit the recipient address for basic safety (starts with 0x, length 42).
+* For 'compare' mode, evaluate the actual spending vs suggested.
+* For 'generate_personality', create a financial profile from user description.
 `;
+
+const RESPONSE_SCHEMAS: Record<string, any> = {
+  generate_personality: {
+    type: Type.OBJECT,
+    properties: {
+      personality: { type: Type.STRING, enum: ["conservative", "balanced", "aggressive"] },
+      monthly_budget_estimate: { type: Type.NUMBER },
+      spending_habit_summary: { type: Type.STRING },
+      risk_level: { type: Type.STRING, enum: ["low", "medium", "high"] },
+    },
+    required: ["personality", "monthly_budget_estimate", "spending_habit_summary", "risk_level"]
+  },
+  decision: {
+    type: Type.OBJECT,
+    properties: {
+      decision: { type: Type.STRING, enum: ["approve", "reject", "modify"] },
+      suggested_amount: { type: Type.NUMBER },
+      reason: { type: Type.STRING },
+      confidence: { type: Type.NUMBER },
+      security_audit: {
+        type: Type.OBJECT,
+        properties: {
+          address_valid: { type: Type.BOOLEAN },
+          suspicious_score: { type: Type.NUMBER },
+          risk_summary: { type: Type.STRING },
+        },
+        required: ["address_valid", "suspicious_score", "risk_summary"]
+      },
+      tx_plan: {
+        type: Type.OBJECT,
+        properties: {
+          execute: { type: Type.BOOLEAN },
+          token: { type: Type.STRING },
+          amount: { type: Type.NUMBER },
+          recipient: { type: Type.STRING },
+          network: { type: Type.STRING },
+        },
+        required: ["execute", "token", "amount", "recipient", "network"]
+      }
+    },
+    required: ["decision", "suggested_amount", "reason", "confidence", "security_audit", "tx_plan"]
+  },
+  compare: {
+    type: Type.OBJECT,
+    properties: {
+      verdict: { type: Type.STRING, enum: ["overspending", "efficient", "underutilized"] },
+      difference: { type: Type.NUMBER },
+      message: { type: Type.STRING },
+    },
+    required: ["verdict", "difference", "message"]
+  },
+  auto_mode: {
+    type: Type.OBJECT,
+    properties: {
+      auto_execute: { type: Type.BOOLEAN },
+      reason: { type: Type.STRING },
+    },
+    required: ["auto_execute", "reason"]
+  }
+};
 
 export async function twinPayAI(
   mode: TwinPayMode,
@@ -75,7 +111,7 @@ export async function twinPayAI(
 ): Promise<any> {
   if (!API_KEY) throw new Error("TwinPay AI requires a Gemini API Key.");
 
-  const prompt = JSON.stringify({ mode, ...data });
+  const prompt = `MODE: ${mode}\nDATA: ${JSON.stringify(data)}`;
 
   try {
     const response = await ai.models.generateContent({
@@ -84,19 +120,29 @@ export async function twinPayAI(
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMAS[mode],
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
       },
     });
 
     const text = response.text || "";
+    if (!text) throw new Error("Empty response from TwinPay AI Engine.");
+    
     return JSON.parse(text);
-  } catch (error) {
+  } catch (error: any) {
     console.error("TwinPay AI Error:", error);
+    // Be more descriptive about common network errors
+    if (error.message?.includes("Failed to fetch") || error.message?.includes("network error")) {
+        throw new Error("AI Connection failure. Please check your internet connection.");
+    }
+    if (error.message?.includes("API key")) {
+        throw new Error("Invalid or missing Gemini API Key. System in read-only mode.");
+    }
     throw error;
   }
 }
 
 // Shortcut methods for better DX
-
 export async function generatePersonality(userInput: string): Promise<PersonalityResponse> {
   return twinPayAI("generate_personality", { user_input: userInput });
 }

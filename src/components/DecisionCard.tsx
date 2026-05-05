@@ -99,12 +99,12 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
           </div>
         </div>
 
-        <div className="p-6 bg-surface-bright border-t border-line flex gap-3">
+        <div className="p-6 bg-surface-bright border-t border-line flex gap-3 relative z-10">
           {(decision.decision === 'approve' || decision.decision === 'modify') && (
             <button 
               onClick={onExecute}
               disabled={isPending}
-              className="flex-1 py-3 bg-celo-green text-ink font-bold rounded-lg uppercase text-xs tracking-widest hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-celo-green text-ink font-bold rounded-lg uppercase text-xs tracking-widest hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto relative z-20"
             >
               {isPending ? (
                 <>
@@ -118,7 +118,7 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
           )}
           <button 
             disabled={isPending}
-            className="px-6 py-3 border border-line text-white/50 font-bold rounded-lg uppercase text-xs tracking-widest hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
+            className="px-6 py-3 border border-line text-white/50 font-bold rounded-lg uppercase text-xs tracking-widest hover:text-white hover:bg-white/5 transition-all disabled:opacity-50 cursor-pointer pointer-events-auto relative z-20"
           >
             Override
           </button>

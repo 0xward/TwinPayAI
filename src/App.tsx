@@ -191,18 +191,37 @@ function AppContent() {
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd');
-        const data = await response.json();
-        if (data.celo && data.celo.usd) {
-          setCeloPrice(data.celo.usd);
-          addLog(`[MARKET] CELO Price updated: $${data.celo.usd}`);
+        // Try CoinGecko
+        const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd');
+        if (cgResponse.ok) {
+          const data = await cgResponse.json();
+          if (data.celo && data.celo.usd) {
+            setCeloPrice(data.celo.usd);
+            addLog(`[MARKET] CELO Price: $${data.celo.usd}`);
+            return;
+          }
         }
+        throw new Error("CoinGecko Unavailable");
       } catch (e) {
-        console.error("Failed to fetch price", e);
+        // Fallback to Binance
+        try {
+          const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=CELOUSDT');
+          if (binanceResponse.ok) {
+            const data = await binanceResponse.json();
+            if (data.price) {
+              const price = parseFloat(data.price);
+              setCeloPrice(price);
+              addLog(`[MARKET] CELO Price (Binance): $${price}`);
+              return;
+            }
+          }
+        } catch (binanceErr) {
+          console.warn("All price APIs failed. Using fallback $0.85");
+        }
       }
     };
     fetchPrice();
-    const interval = setInterval(fetchPrice, 60000); // Update every minute
+    const interval = setInterval(fetchPrice, 300000); // Update every 5 minutes instead of 1 to reduce rate limit hits
     return () => clearInterval(interval);
   }, []);
 
@@ -766,7 +785,7 @@ function AppContent() {
         </header>
 
         {/* CONTENT SCROLL AREA */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 relative z-0">
           <div className="max-w-6xl mx-auto space-y-8">
              {activeView === "history" ? (
                 <HistoryView history={history} />
