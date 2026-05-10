@@ -59,6 +59,8 @@ import { makeDecision, compareSpending, generatePersonality } from "./services/g
 import { UserProfile, TransactionInput, DecisionResponse, CompareResponse, TransactionRecord, ViewType } from "./types";
 import AboutModal from "./components/AboutModal";
 
+import MiniPayDonation from "./components/MiniPayDonation";
+
 const STORAGE_KEY = "twinpay_user_profile";
 const queryClient = new QueryClient();
 
@@ -124,7 +126,10 @@ function AppContent() {
     if (!isConnected) {
       const injectedConnector = connectors.find(c => c.type === 'injected');
       if (injectedConnector) {
-        connect({ connector: injectedConnector });
+        // Only auto-connect if it's MiniPay to avoid desktop metamask popups on load
+        if (typeof window !== "undefined" && window.ethereum && (window.ethereum as any).isMiniPay) {
+          connect({ connector: injectedConnector });
+        }
       }
     }
   }, [connectors, connect, isConnected]);
@@ -894,6 +899,7 @@ function AppContent() {
           </div>
         </footer>
         <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+        <MiniPayDonation />
       </main>
     </div>
   );
