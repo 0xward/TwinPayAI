@@ -15,7 +15,7 @@ interface TransactionFormProps {
 
 export default function TransactionForm({ onSubmit, isLoading }: TransactionFormProps) {
   const [formData, setFormData] = useState<Partial<TransactionInput>>({
-    token: 'cUSD',
+    token: 'STX',
     category: 'Shopping',
     item: '',
     recipient: ''
@@ -52,7 +52,7 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
               type="text" 
               required
               placeholder="e.g. buy coffee at 7-Eleven"
-              className="w-full bg-ink border border-line p-4 rounded-lg focus:outline-none focus:border-celo-green/50 font-mono text-sm placeholder:text-gray-700 transition-colors pointer-events-auto"
+              className="w-full bg-ink border border-line p-4 rounded-lg focus:outline-none focus:border-brand-green/50 font-mono text-sm placeholder:text-gray-700 transition-colors pointer-events-auto"
               onChange={e => setFormData({ ...formData, item: e.target.value })}
             />
           </div>
@@ -67,7 +67,7 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
                   required
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-ink border border-line p-4 pl-8 rounded-lg focus:outline-none focus:border-celo-green/50 font-mono text-sm placeholder:text-gray-700 pointer-events-auto"
+                  className="w-full bg-ink border border-line p-4 pl-8 rounded-lg focus:outline-none focus:border-brand-green/50 font-mono text-sm placeholder:text-gray-700 pointer-events-auto"
                   onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                 />
               </div>
@@ -75,14 +75,14 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
             <div>
               <label className="block text-[10px] uppercase text-muted font-bold mb-2 tracking-widest pl-1">Asset</label>
               <div className="grid grid-cols-2 gap-2">
-                {(['CELO', 'cUSD', 'cEUR', 'USDT'] as TransactionToken[]).map((t) => (
+                {(['STX', 'sBTC', 'aeUSDC'] as TransactionToken[]).map((t) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setFormData({ ...formData, token: t })}
                     className={`px-3 py-3 rounded-lg border text-xs font-mono transition-all pointer-events-auto cursor-pointer ${
                       formData.token === t 
-                        ? "bg-celo-green/10 border-celo-green text-celo-green" 
+                        ? "bg-brand-green/10 border-brand-green text-brand-green" 
                         : "bg-ink border-line text-ghost hover:border-ghost/30"
                     }`}
                   >
@@ -98,8 +98,8 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
              <input 
               type="text" 
               required
-              placeholder="0x..."
-              className="w-full bg-ink border border-line p-4 rounded-lg focus:outline-none focus:border-celo-green/50 font-mono text-xs placeholder:text-gray-700 pointer-events-auto"
+              placeholder="SP..."
+              className="w-full bg-ink border border-line p-4 rounded-lg focus:outline-none focus:border-brand-green/50 font-mono text-xs placeholder:text-gray-700 pointer-events-auto"
               value={formData.recipient}
               onChange={e => setFormData({ ...formData, recipient: e.target.value })}
             />
@@ -109,12 +109,12 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
 
         <div className="pt-6 border-t border-line/30 flex justify-between items-center text-[10px] uppercase font-bold tracking-widest">
            <div className="flex flex-col gap-1">
-              <span className="text-muted">Est. Gas Fee</span>
-              <span className="text-celo-green">~0.001 CELO</span>
+              <span className="text-muted">Est. Network Fee</span>
+              <span className="text-brand-green">~0.0005 STX</span>
            </div>
            <div className="flex flex-col gap-1 text-right">
-              <span className="text-muted">Settlement Time</span>
-              <span className="text-white">~5 Seconds</span>
+              <span className="text-muted">Settlement</span>
+              <span className="text-white">Bitcoin-secured</span>
            </div>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function TransactionForm({ onSubmit, isLoading }: TransactionForm
         <button 
           type="submit"
           disabled={isLoading}
-          className="w-full bg-celo-green text-ink font-bold py-4 rounded-lg flex items-center justify-center gap-3 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 uppercase text-xs tracking-widest cursor-pointer pointer-events-auto relative z-30"
+          className="w-full bg-brand-green text-ink font-bold py-4 rounded-lg flex items-center justify-center gap-3 hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-50 uppercase text-xs tracking-widest cursor-pointer pointer-events-auto relative z-30"
         >
           {isLoading ? (
             <div className="w-5 h-5 border-2 border-ink border-t-transparent rounded-full animate-spin" />

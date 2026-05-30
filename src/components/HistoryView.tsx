@@ -17,9 +17,9 @@ export default function HistoryView({ history }: HistoryViewProps) {
 
   const getVerdictColor = (verdict: string) => {
     switch (verdict) {
-      case 'efficient': return 'text-celo-green bg-celo-green/10';
+      case 'efficient': return 'text-brand-green bg-brand-green/10';
       case 'overspending': return 'text-red-400 bg-red-400/10';
-      case 'underutilized': return 'text-celo-gold bg-celo-gold/10';
+      case 'underutilized': return 'text-brand-gold bg-brand-gold/10';
       default: return 'text-ghost bg-white/5';
     }
   };
@@ -37,7 +37,7 @@ export default function HistoryView({ history }: HistoryViewProps) {
       <div className="flex justify-between items-end mb-8">
         <div>
           <h2 className="text-2xl font-bold tracking-tight uppercase mb-1">Transaction Ledger</h2>
-          <p className="text-sm text-muted font-mono uppercase tracking-widest text-[10px]">Celo Mainnet // Deterministic History</p>
+          <p className="text-sm text-muted font-mono uppercase tracking-widest text-[10px]">Stacks Mainnet // Deterministic History</p>
         </div>
         <div className="flex gap-2">
            <div className="px-3 py-1.5 bg-surface border border-line rounded-lg flex items-center gap-2 text-xs text-ghost cursor-pointer hover:bg-surface-bright transition-colors">
@@ -104,8 +104,8 @@ export default function HistoryView({ history }: HistoryViewProps) {
                       </td>
                       <td className="px-6 py-4 border-b border-line/50">
                         <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
-                          tx.decision === 'approve' ? 'border-celo-green/30 text-celo-green bg-celo-green/5' : 
-                          tx.decision === 'reject' ? 'border-red-500/30 text-red-500 bg-red-500/5' : 'border-celo-gold/30 text-celo-gold bg-celo-gold/5'
+                          tx.decision === 'approve' ? 'border-brand-green/30 text-brand-green bg-brand-green/5' : 
+                          tx.decision === 'reject' ? 'border-red-500/30 text-red-500 bg-red-500/5' : 'border-brand-gold/30 text-brand-gold bg-brand-gold/5'
                         }`}>
                           {tx.decision}
                         </span>
@@ -152,9 +152,9 @@ export default function HistoryView({ history }: HistoryViewProps) {
                                    <div>
                                      <p className="text-[10px] uppercase text-muted font-bold tracking-widest mb-1">Network Context</p>
                                      <div className="bg-ink p-3 rounded border border-line text-[10px] font-mono text-muted">
-                                       Chain ID: 42220 (Celo)<br/>
+                                       Network: Stacks Mainnet<br/>
                                        Status: Confirmed<br/>
-                                       Gas Paid: 0.0001 CELO
+                                       Fee Paid: 0.0005 STX
                                      </div>
                                    </div>
                                 </div>
@@ -186,7 +186,7 @@ export default function HistoryView({ history }: HistoryViewProps) {
            <div>Ledger Size: {history.length} Entries</div>
            <div className="flex items-center gap-2">
              <Clock className="w-3 h-3" />
-             Real-time Celo Index Sync
+             Real-time Stacks Index Sync
            </div>
         </div>
       </div>
