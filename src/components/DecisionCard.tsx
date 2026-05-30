@@ -40,7 +40,7 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
       >
         <div className="p-5 border-b border-line bg-surface-bright flex justify-between items-center">
           <h2 className="text-sm font-bold uppercase tracking-wide">Current Transaction Analysis</h2>
-          <span className="text-[10px] font-mono opacity-50 uppercase">ID: TX-{Math.floor(Math.random() * 10000)}-TP</span>
+          <span className="text-[10px] font-mono opacity-50 uppercase">{decision.tx_plan.network.replace('_', ' ')}</span>
         </div>
 
         <div className="p-8">
@@ -63,8 +63,8 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
               <div className={`text-lg font-bold uppercase ${getStatusColor()}`}>{decision.decision}</div>
             </div>
             <div className="p-4 bg-ink rounded-lg border border-line">
-              <div className="text-[10px] uppercase text-muted font-bold mb-1 tracking-widest">Efficiency</div>
-              <div className="text-lg font-bold uppercase">Optimized</div>
+              <div className="text-[10px] uppercase text-muted font-bold mb-1 tracking-widest">AI Suggested</div>
+              <div className="text-lg font-bold font-mono">${decision.suggested_amount.toFixed(2)}</div>
             </div>
           </div>
 
