@@ -457,7 +457,6 @@ function AppContent() {
         if (!tokenInfo) throw new Error(`Token contract for ${token} not registered.`);
         const [contractAddress, contractName] = tokenInfo.contract.split('.');
         const baseUnits = BigInt(Math.round(amount * 10 ** tokenInfo.decimals));
-        const assetId = `${tokenInfo.contract}::${tokenInfo.assetName}`;
         const memo = activeTx.item.slice(0, 34);
 
         // Deny mode + exact post-condition: the wallet cannot move more than
