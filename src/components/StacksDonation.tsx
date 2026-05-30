@@ -13,8 +13,7 @@ interface StacksDonationProps {
   isConnected: boolean;
 }
 
-// TODO: Replace with the real Stacks donation address before going live.
-const DONATION_ADDRESS = "SP000000000000000000002Q6VF78";
+const DONATION_ADDRESS = "SPQ189E66S20X7ATY7794HBY6743JE9YJMCKHAEF";
 
 export default function StacksDonation({ isConnected }: StacksDonationProps) {
   const [isOpen, setIsOpen] = useState(false);
