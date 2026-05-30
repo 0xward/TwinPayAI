@@ -11,8 +11,11 @@ import {
   uintCV,
   standardPrincipalCV,
   noneCV,
+  someCV,
+  bufferCVFromString,
   validateStacksAddress,
   PostConditionMode,
+  Pc,
 } from "@stacks/transactions";
 import {
   signInAnonymously,
@@ -455,8 +458,15 @@ function AppContent() {
         const tokenInfo = TOKEN_CONTRACTS[token];
         if (!tokenInfo) throw new Error(`Token contract for ${token} not registered.`);
         const [contractAddress, contractName] = tokenInfo.contract.split('.');
-        const baseUnits = BigInt(Math.round(amount * 10 ** tokenInfo.decimals)).toString();
+        const baseUnits = BigInt(Math.round(amount * 10 ** tokenInfo.decimals));
         const assetId = `${tokenInfo.contract}::${tokenInfo.assetName}`;
+        const memo = activeTx.item.slice(0, 34);
+
+        // Deny mode + exact post-condition: the wallet cannot move more than
+        // the intended amount of this specific SIP-010 token.
+        const postCondition = Pc.principal(address!)
+          .willSendEq(baseUnits)
+          .ft(tokenInfo.contract as `${string}.${string}`, tokenInfo.assetName);
 
         await openContractCall({
           contractAddress,
@@ -466,9 +476,10 @@ function AppContent() {
             uintCV(baseUnits),
             standardPrincipalCV(address!),
             standardPrincipalCV(recipient),
-            noneCV(),
+            memo ? someCV(bufferCVFromString(memo)) : noneCV(),
           ],
-          postConditionMode: PostConditionMode.Allow,
+          postConditions: [postCondition],
+          postConditionMode: PostConditionMode.Deny,
           network,
           appDetails: APP_DETAILS,
           onFinish: (data) => {
