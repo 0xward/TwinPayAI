@@ -6,51 +6,36 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bot, Terminal, ShieldCheck, Activity, Info, X, Settings, Wallet, Power, HelpCircle } from "lucide-react";
-import { WagmiProvider, useAccount, useConnect, useDisconnect, useBalance, useSendTransaction, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { formatUnits, parseEther, isAddress, parseUnits, Address } from "viem";
-import { celo } from "viem/chains";
-
-const TOKEN_ADDRESSES: Record<string, Address> = {
-  cUSD: '0x765DE816845861e75A25fCA122bb6898B8B1282a',
-  cEUR: '0xD8763390312C4721948775014440AF0121191B9f',
-  USDT: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e',
-};
-
-const erc20Abi = [
-  {
-    name: 'transfer',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'recipient', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-] as const;
-import { 
-  signInAnonymously, 
-  onAuthStateChanged, 
-  signInWithPopup, 
+import { showConnect, openSTXTransfer, openContractCall } from "@stacks/connect";
+import {
+  uintCV,
+  standardPrincipalCV,
+  noneCV,
+  validateStacksAddress,
+  PostConditionMode,
+} from "@stacks/transactions";
+import {
+  signInAnonymously,
+  onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
   User as FirebaseUser
 } from "firebase/auth";
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  collection, 
-  onSnapshot, 
-  query, 
-  orderBy, 
+import {
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
   addDoc,
   getDocFromServer
 } from "firebase/firestore";
 import { auth, db, handleFirestoreError, OperationType } from "./lib/firebase";
-import { config } from "./wagmi-config";
+import { userSession, network, APP_DETAILS, TOKEN_CONTRACTS } from "./stacks-config";
 import WalletCard from "./components/WalletCard";
 import TransactionForm from "./components/TransactionForm";
 import DecisionCard from "./components/DecisionCard";
@@ -59,42 +44,65 @@ import { makeDecision, compareSpending, generatePersonality } from "./services/g
 import { UserProfile, TransactionInput, DecisionResponse, CompareResponse, TransactionRecord, ViewType } from "./types";
 import AboutModal from "./components/AboutModal";
 
-import MiniPayDonation from "./components/MiniPayDonation";
+import StacksDonation from "./components/StacksDonation";
 
 const STORAGE_KEY = "twinpay_user_profile";
-const queryClient = new QueryClient();
+
+// Read the connected Stacks address from the persistent UserSession.
+function getStacksAddress(): string | null {
+  try {
+    if (userSession.isUserSignedIn()) {
+      const data = userSession.loadUserData();
+      return data.profile?.stxAddress?.mainnet || null;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
 function AppContent() {
-  const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { data: balanceData } = useBalance({ address });
-  
+  const [address, setAddress] = useState<string | null>(getStacksAddress());
+  const isConnected = Boolean(address);
+
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-  
-  const { 
-    data: sendHash, 
-    sendTransaction, 
-    isPending: isSendPending,
-    error: sendError 
-  } = useSendTransaction();
+  const [isPending, setIsPending] = useState(false);
 
-  const {
-    writeContract,
-    data: writeHash,
-    isPending: isWritePending,
-    error: writeError
-  } = useWriteContract();
+  // Connect a Stacks wallet (Leather / Xverse) via @stacks/connect.
+  const connectWallet = useCallback(() => {
+    addLog("[WALLET] Opening Stacks wallet (Leather / Xverse)...");
+    showConnect({
+      appDetails: APP_DETAILS,
+      userSession,
+      onFinish: () => {
+        const addr = getStacksAddress();
+        setAddress(addr);
+        addLog(`[WALLET] Connected: ${addr ? addr.slice(0, 8) + "..." : "unknown"}`);
+      },
+      onCancel: () => addLog("[WALLET] Connection cancelled."),
+    });
+  }, []);
 
-  const hash = sendHash || writeHash;
-  const isPending = isSendPending || isWritePending;
-  const txError = sendError || writeError;
+  const disconnectWallet = useCallback(() => {
+    try {
+      userSession.signUserOut();
+    } catch {
+      // ignore
+    }
+    setAddress(null);
+    addLog("[WALLET] Disconnected.");
+  }, []);
 
-  const { isLoading: isConfirmingTx, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
-    hash,
-  });
+  // Resume any pending sign-in (e.g. after a redirect from the wallet).
+  useEffect(() => {
+    if (userSession.isSignInPending()) {
+      userSession.handlePendingSignIn().then(() => {
+        setAddress(getStacksAddress());
+      });
+    }
+  }, []);
 
   // Test Firebase connection
   useEffect(() => {
@@ -120,19 +128,6 @@ function AppContent() {
     });
     return () => unsubscribe();
   }, []);
-
-  // Auto-connect logic...
-  useEffect(() => {
-    if (!isConnected) {
-      const injectedConnector = connectors.find(c => c.type === 'injected');
-      if (injectedConnector) {
-        // Only auto-connect if it's MiniPay to avoid desktop metamask popups on load
-        if (typeof window !== "undefined" && window.ethereum && (window.ethereum as any).isMiniPay) {
-          connect({ connector: injectedConnector });
-        }
-      }
-    }
-  }, [connectors, connect, isConnected]);
 
   const [profile, setProfile] = useState<UserProfile>({
     monthly_budget: 1200,
@@ -177,32 +172,19 @@ function AppContent() {
     return () => unsubscribe();
   }, [user]);
 
-  // Sync balance from wallet to profile
-  useEffect(() => {
-    if (balanceData) {
-      const formatted = formatUnits(balanceData.value, balanceData.decimals);
-      setProfile(prev => ({
-        ...prev,
-        current_balance: parseFloat(formatted)
-      }));
-    } else if (!isConnected) {
-       setProfile(prev => ({ ...prev, current_balance: 0 }));
-    }
-  }, [balanceData, isConnected]);
+  const [stxPrice, setStxPrice] = useState<number>(2.0); // Default fallback
 
-  const [celoPrice, setCeloPrice] = useState<number>(0.85); // Default fallback
-
-  // Fetch CELO Price
+  // Fetch STX Price
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        // Try CoinGecko
-        const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd');
+        // Try CoinGecko (Stacks id = 'blockstack')
+        const cgResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=blockstack&vs_currencies=usd');
         if (cgResponse.ok) {
           const data = await cgResponse.json();
-          if (data.celo && data.celo.usd) {
-            setCeloPrice(data.celo.usd);
-            addLog(`[MARKET] CELO Price: $${data.celo.usd}`);
+          if (data.blockstack && data.blockstack.usd) {
+            setStxPrice(data.blockstack.usd);
+            addLog(`[MARKET] STX Price: $${data.blockstack.usd}`);
             return;
           }
         }
@@ -210,23 +192,23 @@ function AppContent() {
       } catch (e) {
         // Fallback to Binance
         try {
-          const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=CELOUSDT');
+          const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=STXUSDT');
           if (binanceResponse.ok) {
             const data = await binanceResponse.json();
             if (data.price) {
               const price = parseFloat(data.price);
-              setCeloPrice(price);
-              addLog(`[MARKET] CELO Price (Binance): $${price}`);
+              setStxPrice(price);
+              addLog(`[MARKET] STX Price (Binance): $${price}`);
               return;
             }
           }
         } catch (binanceErr) {
-          console.warn("All price APIs failed. Using fallback $0.85");
+          console.warn("All price APIs failed. Using fallback $2.00");
         }
       }
     };
     fetchPrice();
-    const interval = setInterval(fetchPrice, 300000); // Update every 5 minutes instead of 1 to reduce rate limit hits
+    const interval = setInterval(fetchPrice, 300000); // Update every 5 minutes to reduce rate limit hits
     return () => clearInterval(interval);
   }, []);
 
@@ -239,58 +221,46 @@ function AppContent() {
   const [activeTx, setActiveTx] = useState<TransactionInput | null>(null);
   const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [comparison, setComparison] = useState<CompareResponse | null>(null);
-  const [logs, setLogs] = useState<string[]>(["[SYSTEM] TwinPay AI initialized...", "[NETWORK] Celo Mainnet detected."]);
+  const [logs, setLogs] = useState<string[]>(["[SYSTEM] TwinPay AI initialized...", "[NETWORK] Stacks Mainnet detected."]);
 
-  // Handle transaction success effect
-  useEffect(() => {
-    if (isTxSuccess && hash && activeTx && decision) {
-      const processPostTx = async () => {
-        addLog(`[BLOCKCHAIN] Confirmed: ${hash.slice(0, 10)}...`);
-        const actualAmount = decision.tx_plan.amount;
-        
-        try {
-          const compareResult = await compareSpending(actualAmount, decision.suggested_amount);
-          setComparison(compareResult);
-          addLog(`[COMPARE] ${compareResult.verdict.toUpperCase()}: ${compareResult.message}`);
-          
-          const record: TransactionRecord = {
-            id: hash,
-            item: activeTx.item,
-            category: activeTx.category,
-            amount: actualAmount,
-            token: activeTx.token,
-            recipient: activeTx.recipient,
-            decision: decision.decision,
-            verdict: compareResult.verdict,
-            timestamp: new Date().toISOString()
-          };
-          
-          if (user) {
-            const path = `users/${user.uid}/transactions`;
-            addDoc(collection(db, path), record).catch(e => handleFirestoreError(e, OperationType.WRITE, path));
-          } else {
-            setHistory(prev => [record, ...prev]);
-          }
-        } catch (e) {
-          addLog(`[ERROR] Analysis failed but transaction succeeded.`);
-        } finally {
-          setIsLoading(false);
-          setDecision(null);
-          setActiveTx(null);
-        }
+  // Record a confirmed transaction and run the post-payment comparison.
+  const recordTransaction = async (txId: string) => {
+    if (!activeTx || !decision) return;
+    addLog(`[BLOCKCHAIN] Confirmed: ${txId.slice(0, 10)}...`);
+    const actualAmount = decision.tx_plan.amount;
+
+    try {
+      const compareResult = await compareSpending(actualAmount, decision.suggested_amount);
+      setComparison(compareResult);
+      addLog(`[COMPARE] ${compareResult.verdict.toUpperCase()}: ${compareResult.message}`);
+
+      const record: TransactionRecord = {
+        id: txId,
+        item: activeTx.item,
+        category: activeTx.category,
+        amount: actualAmount,
+        token: activeTx.token,
+        recipient: activeTx.recipient,
+        decision: decision.decision,
+        verdict: compareResult.verdict,
+        timestamp: new Date().toISOString()
       };
-      processPostTx();
-    }
-  }, [isTxSuccess, hash]);
 
-  // Handle transaction error
-  useEffect(() => {
-    if (txError) {
-      addLog(`[ERROR] Transaction failed: ${txError.message.slice(0, 50)}...`);
+      if (user) {
+        const path = `users/${user.uid}/transactions`;
+        addDoc(collection(db, path), record).catch(e => handleFirestoreError(e, OperationType.WRITE, path));
+      } else {
+        setHistory(prev => [record, ...prev]);
+      }
+    } catch (e) {
+      addLog(`[ERROR] Analysis failed but transaction succeeded.`);
+    } finally {
       setIsLoading(false);
-      setIsConfirming(false);
+      setIsPending(false);
+      setDecision(null);
+      setActiveTx(null);
     }
-  }, [txError]);
+  };
 
   // Persistence effect
   useEffect(() => {
@@ -325,8 +295,6 @@ function AppContent() {
     const provider = new GoogleAuthProvider();
     addLog("[AUTH] Starting Google Login...");
     try {
-      // In some mobile wallets/iframes, popup is completely blocked.
-      // We try popup first as it's better UX for those who can use it.
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         addLog(`[AUTH] Signed in as ${result.user.displayName || 'User'}`);
@@ -339,7 +307,6 @@ function AppContent() {
           await signInWithRedirect(auth, provider);
         } catch (redirectErr: any) {
           addLog(`[AUTH] Redirect failed: ${redirectErr.message}`);
-          // Last resort: Anonymous
           signInAnonymously(auth).catch(err => addLog(`[AUTH] Anonymous failed: ${err.message}`));
         }
       } else if (e.message?.includes("Authorized Domain") || e.code === 'auth/unauthorized-domain') {
@@ -390,7 +357,7 @@ function AppContent() {
       
       await new Promise(r => setTimeout(r, 1000));
       addLog("[AUDIT] Step 2: Evaluating Mock Transaction...");
-      const d = await makeDecision(profile, { item: "Diagnostic Probe", category: "System", price: 10, token: "cUSD", recipient: "0x_TEST" });
+      const d = await makeDecision(profile, { item: "Diagnostic Probe", category: "System", price: 10, token: "sBTC", recipient: "SP_TEST" });
       addLog(`[AUDIT] Decision: ${d.decision.toUpperCase()} | Suggested: $${d.suggested_amount}`);
       
       await new Promise(r => setTimeout(r, 1000));
@@ -420,39 +387,71 @@ function AppContent() {
         return;
     }
 
-    addLog(`[MINIPAY] Soliciting signature for ${decision.tx_plan.amount} ${decision.tx_plan.token}...`);
+    addLog(`[WALLET] Soliciting signature for ${decision.tx_plan.amount} ${decision.tx_plan.token}...`);
     setIsLoading(true);
+    setIsPending(true);
 
     try {
       const { token, recipient, amount } = decision.tx_plan;
-      
-      if (!isAddress(recipient)) {
-        throw new Error("Recipient address is invalid.");
+
+      if (!validateStacksAddress(recipient)) {
+        throw new Error("Recipient Stacks address is invalid.");
       }
 
-      if (token === 'CELO') {
-        sendTransaction({
-          to: recipient as Address,
-          value: parseEther(amount.toString()),
+      if (token === 'STX') {
+        // Native STX transfer (microSTX).
+        const microStx = BigInt(Math.round(amount * 1_000_000)).toString();
+        await openSTXTransfer({
+          recipient,
+          amount: microStx,
+          memo: activeTx.item.slice(0, 34),
+          network,
+          appDetails: APP_DETAILS,
+          onFinish: (data) => {
+            addLog(`[WALLET] Broadcast sent.`);
+            recordTransaction(data.txId);
+          },
+          onCancel: () => {
+            addLog("[WALLET] Signature cancelled.");
+            setIsLoading(false);
+            setIsPending(false);
+          },
         });
       } else {
-        const contractAddress = TOKEN_ADDRESSES[token];
-        if (!contractAddress) throw new Error(`Token contract for ${token} not registered.`);
-        
-        writeContract({
-          abi: erc20Abi,
-          address: contractAddress,
+        // SIP-010 fungible token transfer via contract call.
+        const tokenInfo = TOKEN_CONTRACTS[token];
+        if (!tokenInfo) throw new Error(`Token contract for ${token} not registered.`);
+        const [contractAddress, contractName] = tokenInfo.contract.split('.');
+        const baseUnits = BigInt(Math.round(amount * 10 ** tokenInfo.decimals)).toString();
+
+        await openContractCall({
+          contractAddress,
+          contractName,
           functionName: 'transfer',
-          args: [recipient as Address, parseUnits(amount.toString(), 18)],
-          account: address,
-          chain: celo,
+          functionArgs: [
+            uintCV(baseUnits),
+            standardPrincipalCV(address!),
+            standardPrincipalCV(recipient),
+            noneCV(),
+          ],
+          postConditionMode: PostConditionMode.Allow,
+          network,
+          appDetails: APP_DETAILS,
+          onFinish: (data) => {
+            addLog(`[WALLET] Broadcast sent.`);
+            recordTransaction(data.txId);
+          },
+          onCancel: () => {
+            addLog("[WALLET] Signature cancelled.");
+            setIsLoading(false);
+            setIsPending(false);
+          },
         });
       }
-      
-      addLog(`[WALLET] Broadcast pending... waiting for node confirmation.`);
     } catch (error) {
       addLog(`[ERROR] Broadcast failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsLoading(false);
+      setIsPending(false);
     }
   };
 
@@ -487,7 +486,7 @@ function AppContent() {
                       type="number"
                       value={profile.monthly_budget}
                       onChange={e => setProfile({...profile, monthly_budget: Number(e.target.value)})}
-                      className="w-full bg-ink border border-line p-4 pl-8 rounded-lg font-mono text-sm focus:border-celo-green outline-none"
+                      className="w-full bg-ink border border-line p-4 pl-8 rounded-lg font-mono text-sm focus:border-brand-green outline-none"
                     />
                   </div>
                 </div>
@@ -500,7 +499,7 @@ function AppContent() {
                         onClick={() => setProfile({...profile, personality: p as any})}
                         className={`py-3 rounded-lg border text-[10px] uppercase font-bold tracking-widest transition-all ${
                           profile.personality === p 
-                            ? "bg-celo-green/10 border-celo-green text-celo-green" 
+                            ? "bg-brand-green/10 border-brand-green text-brand-green" 
                             : "bg-ink border-line text-muted hover:text-white"
                         }`}
                       >
@@ -516,7 +515,7 @@ function AppContent() {
               <div className="p-6 bg-surface-bright border-t border-line">
                 <button 
                   onClick={() => setIsSettingsOpen(false)}
-                  className="w-full bg-celo-green text-ink font-bold py-4 rounded-lg uppercase text-xs tracking-widest"
+                  className="w-full bg-brand-green text-ink font-bold py-4 rounded-lg uppercase text-xs tracking-widest"
                 >
                   Save & Apply Config
                 </button>
@@ -542,7 +541,7 @@ function AppContent() {
             >
               <div className="p-6 border-b border-line bg-surface-bright flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-celo-gold/20 flex items-center justify-center text-celo-gold">
+                  <div className="w-8 h-8 rounded-full bg-brand-gold/20 flex items-center justify-center text-brand-gold">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <h2 className="text-sm font-bold uppercase tracking-[0.2em]">Verify Execution</h2>
@@ -577,14 +576,14 @@ function AppContent() {
                 </div>
 
                 <div className="space-y-4">
-                   <div className="flex items-center gap-2 p-3 bg-celo-green/10 border border-celo-green/20 rounded-xl">
-                      <Bot className="w-4 h-4 text-celo-green" />
-                      <p className="text-[10px] uppercase font-bold text-celo-green tracking-wider">
+                   <div className="flex items-center gap-2 p-3 bg-brand-green/10 border border-brand-green/20 rounded-xl">
+                      <Bot className="w-4 h-4 text-brand-green" />
+                      <p className="text-[10px] uppercase font-bold text-brand-green tracking-wider">
                         AI Recommended Execution Path Verified
                       </p>
                    </div>
                    <p className="text-xs text-ghost italic leading-relaxed text-center px-4">
-                     "By confirming, you authorize TwinPay AI to broadcast this deterministic transaction to the Celo network."
+                     "By confirming, you authorize TwinPay AI to broadcast this deterministic transaction to the Stacks network."
                    </p>
                 </div>
               </div>
@@ -598,10 +597,10 @@ function AppContent() {
                 </button>
                 <button 
                   onClick={confirmExecution}
-                  disabled={isLoading || isConfirmingTx || isPending}
-                  className="py-4 bg-celo-green text-ink font-bold rounded-xl uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(53,208,127,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading || isPending}
+                  className="py-4 bg-brand-green text-ink font-bold rounded-xl uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(85,70,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPending ? "Broadcasting..." : isConfirmingTx ? "Confirming..." : "Authorize Pulse"}
+                  {isPending ? "Broadcasting..." : "Authorize Pulse"}
                 </button>
               </div>
             </motion.div>
@@ -612,29 +611,29 @@ function AppContent() {
       {/* LEFT NAVIGATION BAR */}
       <nav className="w-64 border-r border-line flex flex-col bg-[#0F121A] shrink-0 hidden md:flex">
         <div className="p-6 border-b border-line flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-celo-green rounded-xl flex items-center justify-center font-black text-ink text-2xl shadow-[0_0_20px_rgba(53,208,127,0.3)]">T</div>
+          <div className="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center font-black text-ink text-2xl shadow-[0_0_20px_rgba(85,70,255,0.3)]">T</div>
           <div className="flex flex-col">
             <h1 className="text-sm font-black tracking-tighter uppercase italic -mb-1">TwinPay AI</h1>
             <span className="text-[9px] text-muted font-bold tracking-[0.3em] uppercase">Autonomous Finance</span>
           </div>
         </div>
         
-        <div className="px-6 py-4 border-b border-line bg-celo-green/5">
+        <div className="px-6 py-4 border-b border-line bg-brand-green/5">
            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-celo-green">
+              <div className="flex items-center gap-2 text-brand-green">
                 <Info className="w-3 h-3" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">Core Intelligence</span>
               </div>
               <button 
                 onClick={runSystemAudit}
                 disabled={isAuditing}
-                className="text-[9px] font-bold uppercase text-ghost hover:text-celo-green transition-colors disabled:opacity-50"
+                className="text-[9px] font-bold uppercase text-ghost hover:text-brand-green transition-colors disabled:opacity-50"
               >
                 {isAuditing ? "Auditing..." : "Run Audit"}
               </button>
            </div>
            <p className="text-[10px] text-ghost leading-relaxed italic opacity-80">
-             TwinPay is a deterministic liquidity engine that uses behavioral AI to authorize Celo Mainnet transactions based on your risk profile.
+             TwinPay is a deterministic liquidity engine that uses behavioral AI to authorize Stacks Mainnet transactions based on your risk profile.
            </p>
         </div>
         
@@ -671,14 +670,14 @@ function AppContent() {
           <div className="p-5 bg-surface rounded-xl border border-line">
             <div className="text-[10px] uppercase text-muted font-bold mb-2 flex justify-between items-center">
               User Profile
-              <button onClick={() => setIsSettingsOpen(true)} className="text-ghost hover:text-celo-green">
+              <button onClick={() => setIsSettingsOpen(true)} className="text-ghost hover:text-brand-green">
                 <Settings className="w-3 h-3" />
               </button>
             </div>
-            <div className="text-sm font-bold">${profile.monthly_budget.toLocaleString()} <span className="text-celo-green">USD</span></div>
+            <div className="text-sm font-bold">${profile.monthly_budget.toLocaleString()} <span className="text-brand-green">USD</span></div>
             <div className="text-[11px] text-ghost opacity-70">Monthly Budget Limit</div>
             <div className="mt-3 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${profile.personality === "aggressive" ? "bg-red-500" : profile.personality === "conservative" ? "bg-celo-green" : "bg-celo-orange"}`}></span>
+              <span className={`w-2 h-2 rounded-full ${profile.personality === "aggressive" ? "bg-red-500" : profile.personality === "conservative" ? "bg-brand-green" : "bg-brand-orange"}`}></span>
               <span className="text-xs font-semibold uppercase">{profile.personality} Profile</span>
             </div>
           </div>
@@ -691,15 +690,15 @@ function AppContent() {
         <header className="h-16 border-b border-line px-8 flex items-center justify-between bg-[#0F121A] shrink-0 sticky top-0 z-[100] w-full">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-               <div className="w-9 h-9 bg-celo-green rounded-xl flex items-center justify-center font-black text-ink text-xl shadow-[0_0_15px_rgba(53,208,127,0.25)]">T</div>
+               <div className="w-9 h-9 bg-brand-green rounded-xl flex items-center justify-center font-black text-ink text-xl shadow-[0_0_15px_rgba(85,70,255,0.25)]">T</div>
                <div className="flex flex-col">
                  <h1 className="text-sm font-black uppercase italic tracking-tighter leading-none">TwinPay AI</h1>
                </div>
             </div>
             
             <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
-               <ShieldCheck className="w-3 h-3 text-celo-green" />
-               <span className="text-[9px] font-bold text-ghost uppercase tracking-wider">Secure Celo Protocol</span>
+               <ShieldCheck className="w-3 h-3 text-brand-green" />
+               <span className="text-[9px] font-bold text-ghost uppercase tracking-wider">Secure Stacks Protocol</span>
             </div>
           </div>
           
@@ -746,14 +745,7 @@ function AppContent() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  try {
-                    disconnect();
-                    addLog("[WALLET] Requesting disconnect...");
-                  } catch (err: any) {
-                    addLog(`[ERROR] Disconnect failed: ${err.message}`);
-                    // Fallback: clear address locally if wagmi is stuck
-                    addLog("[WALLET] Try refreshing if still stuck.");
-                  }
+                  disconnectWallet();
                 }}
                 type="button"
                 className="flex items-center gap-2 px-4 h-9 bg-line hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/20 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer"
@@ -762,28 +754,20 @@ function AppContent() {
                  Disconnect
                </button>
              ) : (
-               <div className="flex gap-2">
-                 {connectors.map((connector) => (
-                   <button 
-                    key={connector.uid}
-                    onClick={() => {
-                      addLog(`[WALLET] Connecting to ${connector.name}...`);
-                      connect({ connector });
-                    }}
-                    type="button"
-                    className="flex items-center gap-2 px-4 h-9 bg-white text-ink rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-celo-green transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] cursor-pointer"
-                   >
-                     <Wallet className="w-3 h-3" />
-                     {connector.name === "Injected" ? "Connect Wallet" : connector.name}
-                   </button>
-                 ))}
-               </div>
+               <button 
+                onClick={connectWallet}
+                type="button"
+                className="flex items-center gap-2 px-4 h-9 bg-white text-ink rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-brand-green transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] cursor-pointer"
+               >
+                 <Wallet className="w-3 h-3" />
+                 Connect Wallet
+               </button>
              )}
              
              <div className="h-4 w-[1px] bg-line hidden sm:block"></div>
              
-             <div className="text-xs font-mono text-celo-green hidden sm:flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-celo-green animate-pulse" : "bg-muted"}`}></div>
+             <div className="text-xs font-mono text-brand-green hidden sm:flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-brand-green animate-pulse" : "bg-muted"}`}></div>
                 AUTO_CORE: ACTIVE
              </div>
           </div>
@@ -803,28 +787,28 @@ function AppContent() {
                          <DecisionCard 
                           decision={decision} 
                           onExecute={handleExecute} 
-                          isPending={isPending || isConfirmingTx}
+                          isPending={isPending}
                          />
                        ) : comparison ? (
                           <motion.div 
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-surface-bright border border-celo-gold/30 rounded-2xl p-8 shadow-xl"
+                            className="bg-surface-bright border border-brand-gold/30 rounded-2xl p-8 shadow-xl"
                           >
                             <div className="flex justify-between items-center mb-6">
-                              <h2 className="text-celo-gold font-bold uppercase tracking-widest text-sm">Post-Payment Insight</h2>
-                              <div className="px-2 py-1 bg-celo-gold/10 rounded text-[10px] text-celo-gold font-mono">{comparison.verdict}</div>
+                              <h2 className="text-brand-gold font-bold uppercase tracking-widest text-sm">Post-Payment Insight</h2>
+                              <div className="px-2 py-1 bg-brand-gold/10 rounded text-[10px] text-brand-gold font-mono">{comparison.verdict}</div>
                             </div>
                             <p className="text-lg italic text-white/90 leading-relaxed mb-8">"{comparison.message}"</p>
                             <div className="grid grid-cols-2 gap-4">
                                <div className="p-4 bg-ink rounded-lg border border-line">
                                  <div className="text-[10px] text-muted uppercase font-bold mb-1">Budget Delta</div>
-                                 <div className="text-xl font-mono text-celo-gold">${comparison.difference.toFixed(2)}</div>
+                                 <div className="text-xl font-mono text-brand-gold">${comparison.difference.toFixed(2)}</div>
                                </div>
                                <div className="p-4 bg-ink rounded-lg border border-line flex items-center justify-center">
                                  <button 
                                   onClick={() => setComparison(null)}
-                                  className="text-[10px] font-bold uppercase tracking-widest hover:text-celo-green transition-colors"
+                                  className="text-[10px] font-bold uppercase tracking-widest hover:text-brand-green transition-colors"
                                  >
                                    Dismiss Data
                                  </button>
@@ -844,24 +828,24 @@ function AppContent() {
                   <aside className="xl:col-span-4 space-y-6">
                      <WalletCard 
                        profile={profile} 
-                       address={address || "0x0000...0000"} 
-                       celoPrice={celoPrice}
+                       address={address || "SP0000...0000"} 
+                       stxPrice={stxPrice}
                      />
 
                      <div className="bg-surface border border-line rounded-2xl p-6">
                         <div className="text-[10px] uppercase text-muted font-bold mb-4 tracking-widest">Budget Impact Analysis</div>
                         <div className="relative h-2 bg-ink rounded-full overflow-hidden mb-2">
                           <div 
-                            className="absolute left-0 top-0 h-full bg-celo-green transition-all duration-1000" 
+                            className="absolute left-0 top-0 h-full bg-brand-green transition-all duration-1000" 
                             style={{ width: `${Math.min(100, (profile.current_balance > 0 ? ( (profile.monthly_budget - (profile.current_balance % 500)) / profile.monthly_budget ) * 100 : 0))}%` }}
                           ></div>
                         </div>
                         <div className="flex justify-between text-[11px] font-bold mt-3">
                           <span className="text-ghost uppercase">Utilized</span>
-                          <span className="text-celo-green uppercase">Available</span>
+                          <span className="text-brand-green uppercase">Available</span>
                         </div>
                         <p className="mt-6 text-[11px] text-muted italic leading-relaxed border-t border-line pt-4">
-                          "TwinPay AI actively monitors your {profile.personality} behavior. Wallet liquidity synced to Celo Mainnet."
+                          "TwinPay AI actively monitors your {profile.personality} behavior. Wallet liquidity synced to Stacks Mainnet."
                         </p>
                      </div>
                   </aside>
@@ -873,12 +857,12 @@ function AppContent() {
         {/* FLOATING ABOUT & FAQ BUTTON */}
         <button 
           onClick={() => setIsAboutOpen(true)}
-          className="fixed bottom-16 left-8 sm:left-72 z-40 bg-paper/50 backdrop-blur-md border border-line p-3 rounded-full shadow-2xl hover:bg-white/10 hover:border-celo-green transition-all group lg:bottom-20"
+          className="fixed bottom-16 left-8 sm:left-72 z-40 bg-paper/50 backdrop-blur-md border border-line p-3 rounded-full shadow-2xl hover:bg-white/10 hover:border-brand-green transition-all group lg:bottom-20"
           title="About & FAQ"
         >
           <div className="flex items-center gap-3 pr-2">
-            <div className="w-8 h-8 bg-celo-green/20 rounded-full flex items-center justify-center">
-              <HelpCircle className="w-4 h-4 text-celo-green" />
+            <div className="w-8 h-8 bg-brand-green/20 rounded-full flex items-center justify-center">
+              <HelpCircle className="w-4 h-4 text-brand-green" />
             </div>
             <span className="hidden sm:block text-[9px] font-black uppercase tracking-[0.2em] text-muted group-hover:text-white transition-colors">About & FAQ</span>
           </div>
@@ -888,7 +872,7 @@ function AppContent() {
         <footer className="h-12 bg-ink border-t border-line px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-celo-green" : "bg-muted"}`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-brand-green" : "bg-muted"}`}></span>
               <span className="text-[10px] uppercase font-bold text-muted tracking-widest">System Operational</span>
             </div>
             <div className="text-[10px] text-muted uppercase font-mono hidden sm:block">Latency: 14ms</div>
@@ -899,18 +883,12 @@ function AppContent() {
           </div>
         </footer>
         <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-        <MiniPayDonation />
+        <StacksDonation isConnected={isConnected} />
       </main>
     </div>
   );
 }
 
 export default function App() {
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <AppContent />
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
+  return <AppContent />;
 }
