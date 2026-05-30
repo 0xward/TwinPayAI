@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type TransactionToken = 'CELO' | 'cUSD' | 'USDT' | 'cEUR';
+export type TransactionToken = 'STX' | 'sBTC' | 'aeUSDC';
 
 export interface UserProfile {
   monthly_budget: number;
@@ -45,7 +45,7 @@ export interface DecisionResponse {
     token: TransactionToken;
     amount: number;
     recipient: string;
-    network: 'celo_mainnet';
+    network: 'stacks_mainnet';
   };
 }
 
