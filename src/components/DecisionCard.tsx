@@ -18,16 +18,16 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
 
   const getStatusColor = () => {
     switch (decision.decision) {
-      case 'approve': return 'text-celo-green';
+      case 'approve': return 'text-brand-green';
       case 'reject': return 'text-red-500';
-      case 'modify': return 'text-celo-gold';
+      case 'modify': return 'text-brand-gold';
     }
   };
 
   const getRiskColor = (score: number) => {
     if (score > 50) return 'text-red-500';
-    if (score > 20) return 'text-celo-gold';
-    return 'text-celo-green';
+    if (score > 20) return 'text-brand-gold';
+    return 'text-brand-green';
   };
 
   return (
@@ -40,7 +40,7 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
       >
         <div className="p-5 border-b border-line bg-surface-bright flex justify-between items-center">
           <h2 className="text-sm font-bold uppercase tracking-wide">Current Transaction Analysis</h2>
-          <span className="text-[10px] font-mono opacity-50 uppercase">ID: TX-{Math.floor(Math.random() * 10000)}-TP</span>
+          <span className="text-[10px] font-mono opacity-50 uppercase">{decision.tx_plan.network.replace('_', ' ')}</span>
         </div>
 
         <div className="p-8">
@@ -63,20 +63,20 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
               <div className={`text-lg font-bold uppercase ${getStatusColor()}`}>{decision.decision}</div>
             </div>
             <div className="p-4 bg-ink rounded-lg border border-line">
-              <div className="text-[10px] uppercase text-muted font-bold mb-1 tracking-widest">Efficiency</div>
-              <div className="text-lg font-bold uppercase">Optimized</div>
+              <div className="text-[10px] uppercase text-muted font-bold mb-1 tracking-widest">AI Suggested</div>
+              <div className="text-lg font-bold font-mono">${decision.suggested_amount.toFixed(2)}</div>
             </div>
           </div>
 
           <div className="mb-8 p-4 bg-ink/50 border border-line rounded-xl">
              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck className={`w-4 h-4 ${decision.security_audit?.address_valid ? 'text-celo-green' : 'text-red-500'}`} />
+                <ShieldCheck className={`w-4 h-4 ${decision.security_audit?.address_valid ? 'text-brand-green' : 'text-red-500'}`} />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-ghost">Security Audit</span>
              </div>
              <div className="space-y-3">
                 <div className="flex justify-between items-center text-[11px]">
                    <span className="text-muted">Target Integrity</span>
-                   <span className={decision.security_audit?.address_valid ? 'text-celo-green' : 'text-red-500'}>
+                   <span className={decision.security_audit?.address_valid ? 'text-brand-green' : 'text-red-500'}>
                      {decision.security_audit?.address_valid ? 'Verified Format' : 'Invalid Format'}
                    </span>
                 </div>
@@ -104,7 +104,7 @@ export default function DecisionCard({ decision, onExecute, isPending }: Decisio
             <button 
               onClick={onExecute}
               disabled={isPending}
-              className="flex-1 py-3 bg-celo-green text-ink font-bold rounded-lg uppercase text-xs tracking-widest hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto relative z-20"
+              className="flex-1 py-3 bg-brand-green text-ink font-bold rounded-lg uppercase text-xs tracking-widest hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto relative z-20"
             >
               {isPending ? (
                 <>

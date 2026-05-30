@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowUpRight, Search, Filter, Clock, ChevronDown, ChevronUp, ExternalLink, Tag, User } from "lucide-react";
 import { TransactionRecord } from "../types";
+import { explorerTxUrl } from "../stacks-config";
 
 interface HistoryViewProps {
   history: TransactionRecord[];
@@ -17,9 +18,9 @@ export default function HistoryView({ history }: HistoryViewProps) {
 
   const getVerdictColor = (verdict: string) => {
     switch (verdict) {
-      case 'efficient': return 'text-celo-green bg-celo-green/10';
+      case 'efficient': return 'text-brand-green bg-brand-green/10';
       case 'overspending': return 'text-red-400 bg-red-400/10';
-      case 'underutilized': return 'text-celo-gold bg-celo-gold/10';
+      case 'underutilized': return 'text-brand-gold bg-brand-gold/10';
       default: return 'text-ghost bg-white/5';
     }
   };
@@ -37,7 +38,7 @@ export default function HistoryView({ history }: HistoryViewProps) {
       <div className="flex justify-between items-end mb-8">
         <div>
           <h2 className="text-2xl font-bold tracking-tight uppercase mb-1">Transaction Ledger</h2>
-          <p className="text-sm text-muted font-mono uppercase tracking-widest text-[10px]">Celo Mainnet // Deterministic History</p>
+          <p className="text-sm text-muted font-mono uppercase tracking-widest text-[10px]">Stacks Mainnet // Deterministic History</p>
         </div>
         <div className="flex gap-2">
            <div className="px-3 py-1.5 bg-surface border border-line rounded-lg flex items-center gap-2 text-xs text-ghost cursor-pointer hover:bg-surface-bright transition-colors">
@@ -104,8 +105,8 @@ export default function HistoryView({ history }: HistoryViewProps) {
                       </td>
                       <td className="px-6 py-4 border-b border-line/50">
                         <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
-                          tx.decision === 'approve' ? 'border-celo-green/30 text-celo-green bg-celo-green/5' : 
-                          tx.decision === 'reject' ? 'border-red-500/30 text-red-500 bg-red-500/5' : 'border-celo-gold/30 text-celo-gold bg-celo-gold/5'
+                          tx.decision === 'approve' ? 'border-brand-green/30 text-brand-green bg-brand-green/5' : 
+                          tx.decision === 'reject' ? 'border-red-500/30 text-red-500 bg-red-500/5' : 'border-brand-gold/30 text-brand-gold bg-brand-gold/5'
                         }`}>
                           {tx.decision}
                         </span>
@@ -151,23 +152,28 @@ export default function HistoryView({ history }: HistoryViewProps) {
                                 <div className="space-y-4">
                                    <div>
                                      <p className="text-[10px] uppercase text-muted font-bold tracking-widest mb-1">Network Context</p>
-                                     <div className="bg-ink p-3 rounded border border-line text-[10px] font-mono text-muted">
-                                       Chain ID: 42220 (Celo)<br/>
-                                       Status: Confirmed<br/>
-                                       Gas Paid: 0.0001 CELO
+                                     <div className="bg-ink p-3 rounded border border-line text-[10px] font-mono text-muted break-all">
+                                       Network: Stacks Mainnet<br/>
+                                       Token: {tx.token}<br/>
+                                       Tx ID: {tx.id.slice(0, 18)}...
                                      </div>
                                    </div>
                                 </div>
 
                                 <div className="flex flex-col justify-between">
-                                  <div className="text-[10px] uppercase text-muted font-bold tracking-widest mb-2">Extended Analysis</div>
+                                  <div className="text-[10px] uppercase text-muted font-bold tracking-widest mb-2">AI Decision</div>
                                   <p className="text-xs text-ghost italic leading-relaxed">
-                                    "This transaction was processed with {(Math.random() * 20 + 80).toFixed(1)}% TwinPay confidence. Relational budget impact was minimal."
+                                    TwinPay AI marked this payment as <span className="text-white font-bold uppercase">{tx.decision}</span> with a <span className="text-white font-bold uppercase">{tx.verdict}</span> spending verdict against your budget.
                                   </p>
-                                  <button className="mt-4 flex items-center justify-center gap-2 bg-line hover:bg-surface-bright text-white text-[10px] font-bold uppercase tracking-widest py-2 rounded transition-all">
+                                  <a
+                                    href={explorerTxUrl(tx.id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-4 flex items-center justify-center gap-2 bg-line hover:bg-surface-bright text-white text-[10px] font-bold uppercase tracking-widest py-2 rounded transition-all"
+                                  >
                                     <ExternalLink className="w-3 h-3" />
                                     View in Explorer
-                                  </button>
+                                  </a>
                                 </div>
                               </div>
                             </motion.div>
@@ -186,7 +192,7 @@ export default function HistoryView({ history }: HistoryViewProps) {
            <div>Ledger Size: {history.length} Entries</div>
            <div className="flex items-center gap-2">
              <Clock className="w-3 h-3" />
-             Real-time Celo Index Sync
+             Real-time Stacks Index Sync
            </div>
         </div>
       </div>
