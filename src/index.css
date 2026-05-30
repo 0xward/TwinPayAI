@@ -1,27 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-green: #5546FF;
-  --color-brand-gold: #FBCC5C;
-  --color-brand-orange: #FB923C;
-  --color-ink: #0A0D14;
-  --color-surface: #161B26;
-  --color-surface-bright: #1C222E;
+  /* Arkham-style dark dApp palette: Orange / light-orange / black */
+  --color-brand-green: #FF7A18;      /* primary accent (orange) */
+  --color-brand-orange: #FF7A18;     /* primary accent (orange) */
+  --color-brand-light: #FFB066;      /* light orange */
+  --color-brand-gold: #FFB066;       /* light orange (legacy alias) */
+  --color-brand-deep: #C2410C;       /* deep orange */
+
+  /* Near-black surfaces with a subtle warm tint */
+  --color-ink: #07090D;
+  --color-paper: #0B0E14;
+  --color-surface: #11141C;
+  --color-surface-bright: #171B25;
   --color-line: #232936;
   --color-muted: #6E7686;
   --color-ghost: #9CA3AF;
-  
+
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Signature 3-stop gradient: light orange -> orange -> black */
+  --gradient-brand: linear-gradient(135deg, #FFB066 0%, #FF7A18 45%, #07090D 120%);
+  --gradient-brand-soft: linear-gradient(135deg, rgba(255,176,102,0.18) 0%, rgba(255,122,24,0.12) 45%, rgba(7,9,13,0) 100%);
 }
 
 @layer base {
   body {
-    @apply bg-ink text-[#F4F4F7] font-sans antialiased selection:bg-brand-green selection:text-ink;
+    @apply text-[#F4F4F7] font-sans antialiased selection:bg-brand-orange selection:text-ink;
+    background-color: var(--color-ink);
+    /* Layered radial orange glows + faint grid for the Arkham backdrop */
+    background-image:
+      radial-gradient(900px circle at 12% -10%, rgba(255,122,24,0.16), transparent 45%),
+      radial-gradient(700px circle at 100% 0%, rgba(194,65,12,0.14), transparent 40%),
+      radial-gradient(600px circle at 50% 120%, rgba(255,176,102,0.08), transparent 45%),
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    background-attachment: fixed;
   }
 }
 
+/* Gradient helpers */
+.bg-gradient-brand {
+  background-image: var(--gradient-brand);
+}
+.bg-gradient-brand-soft {
+  background-image: var(--gradient-brand-soft);
+}
+.text-gradient-brand {
+  background-image: linear-gradient(135deg, #FFB066 0%, #FF7A18 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.border-gradient-brand {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--gradient-brand) border-box;
+}
+
+/* Glow utilities */
+.glow-brand {
+  box-shadow: 0 0 24px rgba(255, 122, 24, 0.35);
+}
+.glow-brand-sm {
+  box-shadow: 0 0 14px rgba(255, 122, 24, 0.25);
+}
 .terminal-glow {
-  box-shadow: 0 0 40px rgba(85, 70, 255, 0.05);
+  box-shadow: 0 0 40px rgba(255, 122, 24, 0.06);
+}
+
+/* Frosted panel used across cards for a premium dApp feel */
+.panel-glass {
+  background: linear-gradient(180deg, rgba(23,27,37,0.85) 0%, rgba(17,20,28,0.85) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-line);
 }
 
 .pixel-border {
@@ -34,9 +88,24 @@
   gap: 1.5rem;
 }
 
+/* Slim, on-brand scrollbar */
+.custom-scrollbar::-webkit-scrollbar,
+body ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb,
+body ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FF7A18, #C2410C);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track,
+body ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @layer utilities {
   .border-bottom {
     border-bottom: 1px solid var(--color-line);
   }
 }
-
