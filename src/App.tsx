@@ -921,8 +921,8 @@ function AppContent() {
               <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-brand-green" : "bg-muted"}`}></span>
               <span className="text-[10px] uppercase font-bold text-muted tracking-widest">System Operational</span>
             </div>
-            <div className="text-[10px] text-muted uppercase font-mono hidden sm:block">Latency: 14ms</div>
-            <div className="text-[10px] text-muted uppercase font-mono hidden sm:block">Decision Latency: 420ms</div>
+            <div className="text-[10px] text-muted uppercase font-mono hidden sm:block">{isConnected ? "Wallet: Connected" : "Wallet: Disconnected"}</div>
+            <div className="text-[10px] text-muted uppercase font-mono hidden sm:block">STX: ${stxPrice.toFixed(4)}</div>
           </div>
           <div className="text-[10px] font-mono text-muted uppercase tracking-tighter">
             v0.1.0-beta // twinpay-determ-core

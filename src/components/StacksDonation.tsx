@@ -136,7 +136,7 @@ export default function StacksDonation({ isConnected }: StacksDonationProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 ${
-          isOpen ? "bg-surface border border-brand-green" : "bg-brand-green border border-transparent shadow-[0_0_20px_rgba(85,70,255,0.4)]"
+          isOpen ? "bg-surface border border-brand-orange" : "bg-gradient-brand border border-transparent glow-brand"
         }`}
       >
         <Heart className={`w-6 h-6 ${isOpen ? "text-brand-green" : "text-ink"}`} fill={isOpen ? "none" : "currentColor"} />
