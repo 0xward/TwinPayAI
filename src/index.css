@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --color-celo-green: #35D07F;
-  --color-celo-gold: #FBCC5C;
-  --color-celo-orange: #FB923C;
+  --color-brand-green: #5546FF;
+  --color-brand-gold: #FBCC5C;
+  --color-brand-orange: #FB923C;
   --color-ink: #0A0D14;
   --color-surface: #161B26;
   --color-surface-bright: #1C222E;
@@ -16,12 +16,12 @@
 
 @layer base {
   body {
-    @apply bg-ink text-[#F4F4F7] font-sans antialiased selection:bg-celo-green selection:text-ink;
+    @apply bg-ink text-[#F4F4F7] font-sans antialiased selection:bg-brand-green selection:text-ink;
   }
 }
 
 .terminal-glow {
-  box-shadow: 0 0 40px rgba(53, 208, 127, 0.05);
+  box-shadow: 0 0 40px rgba(85, 70, 255, 0.05);
 }
 
 .pixel-border {
