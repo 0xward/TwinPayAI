@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowUpRight, Search, Filter, Clock, ChevronDown, ChevronUp, ExternalLink, Tag, User } from "lucide-react";
 import { TransactionRecord } from "../types";
+import { explorerTxUrl } from "../stacks-config";
 
 interface HistoryViewProps {
   history: TransactionRecord[];
@@ -151,23 +152,28 @@ export default function HistoryView({ history }: HistoryViewProps) {
                                 <div className="space-y-4">
                                    <div>
                                      <p className="text-[10px] uppercase text-muted font-bold tracking-widest mb-1">Network Context</p>
-                                     <div className="bg-ink p-3 rounded border border-line text-[10px] font-mono text-muted">
+                                     <div className="bg-ink p-3 rounded border border-line text-[10px] font-mono text-muted break-all">
                                        Network: Stacks Mainnet<br/>
-                                       Status: Confirmed<br/>
-                                       Fee Paid: 0.0005 STX
+                                       Token: {tx.token}<br/>
+                                       Tx ID: {tx.id.slice(0, 18)}...
                                      </div>
                                    </div>
                                 </div>
 
                                 <div className="flex flex-col justify-between">
-                                  <div className="text-[10px] uppercase text-muted font-bold tracking-widest mb-2">Extended Analysis</div>
+                                  <div className="text-[10px] uppercase text-muted font-bold tracking-widest mb-2">AI Decision</div>
                                   <p className="text-xs text-ghost italic leading-relaxed">
-                                    "This transaction was processed with {(Math.random() * 20 + 80).toFixed(1)}% TwinPay confidence. Relational budget impact was minimal."
+                                    TwinPay AI marked this payment as <span className="text-white font-bold uppercase">{tx.decision}</span> with a <span className="text-white font-bold uppercase">{tx.verdict}</span> spending verdict against your budget.
                                   </p>
-                                  <button className="mt-4 flex items-center justify-center gap-2 bg-line hover:bg-surface-bright text-white text-[10px] font-bold uppercase tracking-widest py-2 rounded transition-all">
+                                  <a
+                                    href={explorerTxUrl(tx.id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-4 flex items-center justify-center gap-2 bg-line hover:bg-surface-bright text-white text-[10px] font-bold uppercase tracking-widest py-2 rounded transition-all"
+                                  >
                                     <ExternalLink className="w-3 h-3" />
                                     View in Explorer
-                                  </button>
+                                  </a>
                                 </div>
                               </div>
                             </motion.div>
