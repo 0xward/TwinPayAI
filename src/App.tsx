@@ -35,7 +35,7 @@ import {
   getDocFromServer
 } from "firebase/firestore";
 import { auth, db, handleFirestoreError, OperationType } from "./lib/firebase";
-import { userSession, network, APP_DETAILS, TOKEN_CONTRACTS } from "./stacks-config";
+import { userSession, network, APP_DETAILS, TOKEN_CONTRACTS, fetchStacksBalances } from "./stacks-config";
 import WalletCard from "./components/WalletCard";
 import TransactionForm from "./components/TransactionForm";
 import DecisionCard from "./components/DecisionCard";
@@ -134,6 +134,38 @@ function AppContent() {
     personality: "balanced",
     current_balance: 0 
   });
+
+  // Live SIP-010 token balances keyed by symbol (e.g. sBTC, aeUSDC).
+  const [tokenBalances, setTokenBalances] = useState<Record<string, number>>({});
+
+  // Fetch live on-chain balances whenever the connected address changes.
+  useEffect(() => {
+    if (!address) {
+      setProfile(prev => ({ ...prev, current_balance: 0 }));
+      setTokenBalances({});
+      return;
+    }
+
+    let cancelled = false;
+    const loadBalances = async () => {
+      try {
+        const balances = await fetchStacksBalances(address);
+        if (cancelled) return;
+        setProfile(prev => ({ ...prev, current_balance: balances.stx }));
+        setTokenBalances(balances.tokens);
+        addLog(`[CHAIN] Balance synced: ${balances.stx.toFixed(4)} STX`);
+      } catch (e) {
+        if (!cancelled) addLog(`[ERROR] Balance sync failed: ${e instanceof Error ? e.message : 'unknown'}`);
+      }
+    };
+
+    loadBalances();
+    const interval = setInterval(loadBalances, 30000); // refresh every 30s
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [address]);
 
   // Load profile from Firestore
   useEffect(() => {
@@ -357,7 +389,8 @@ function AppContent() {
       
       await new Promise(r => setTimeout(r, 1000));
       addLog("[AUDIT] Step 2: Evaluating Mock Transaction...");
-      const d = await makeDecision(profile, { item: "Diagnostic Probe", category: "System", price: 10, token: "sBTC", recipient: "SP_TEST" });
+      const probeRecipient = address || "SP000000000000000000002Q6VF78";
+      const d = await makeDecision(profile, { item: "Diagnostic Probe", category: "System", price: 10, token: "sBTC", recipient: probeRecipient });
       addLog(`[AUDIT] Decision: ${d.decision.toUpperCase()} | Suggested: $${d.suggested_amount}`);
       
       await new Promise(r => setTimeout(r, 1000));
@@ -423,6 +456,7 @@ function AppContent() {
         if (!tokenInfo) throw new Error(`Token contract for ${token} not registered.`);
         const [contractAddress, contractName] = tokenInfo.contract.split('.');
         const baseUnits = BigInt(Math.round(amount * 10 ** tokenInfo.decimals)).toString();
+        const assetId = `${tokenInfo.contract}::${tokenInfo.assetName}`;
 
         await openContractCall({
           contractAddress,
@@ -598,7 +632,7 @@ function AppContent() {
                 <button 
                   onClick={confirmExecution}
                   disabled={isLoading || isPending}
-                  className="py-4 bg-brand-green text-ink font-bold rounded-xl uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(85,70,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="py-4 bg-gradient-brand text-ink font-bold rounded-xl uppercase text-[10px] tracking-widest glow-brand hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isPending ? "Broadcasting..." : "Authorize Pulse"}
                 </button>
@@ -611,9 +645,9 @@ function AppContent() {
       {/* LEFT NAVIGATION BAR */}
       <nav className="w-64 border-r border-line flex flex-col bg-[#0F121A] shrink-0 hidden md:flex">
         <div className="p-6 border-b border-line flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-brand-green rounded-xl flex items-center justify-center font-black text-ink text-2xl shadow-[0_0_20px_rgba(85,70,255,0.3)]">T</div>
+          <div className="w-10 h-10 bg-gradient-brand rounded-xl flex items-center justify-center font-black text-ink text-2xl glow-brand">T</div>
           <div className="flex flex-col">
-            <h1 className="text-sm font-black tracking-tighter uppercase italic -mb-1">TwinPay AI</h1>
+            <h1 className="text-sm font-black tracking-tighter uppercase italic -mb-1 text-gradient-brand">TwinPay AI</h1>
             <span className="text-[9px] text-muted font-bold tracking-[0.3em] uppercase">Autonomous Finance</span>
           </div>
         </div>
@@ -690,9 +724,9 @@ function AppContent() {
         <header className="h-16 border-b border-line px-8 flex items-center justify-between bg-[#0F121A] shrink-0 sticky top-0 z-[100] w-full">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-               <div className="w-9 h-9 bg-brand-green rounded-xl flex items-center justify-center font-black text-ink text-xl shadow-[0_0_15px_rgba(85,70,255,0.25)]">T</div>
+               <div className="w-9 h-9 bg-gradient-brand rounded-xl flex items-center justify-center font-black text-ink text-xl glow-brand-sm">T</div>
                <div className="flex flex-col">
-                 <h1 className="text-sm font-black uppercase italic tracking-tighter leading-none">TwinPay AI</h1>
+                 <h1 className="text-sm font-black uppercase italic tracking-tighter leading-none text-gradient-brand">TwinPay AI</h1>
                </div>
             </div>
             
@@ -757,7 +791,7 @@ function AppContent() {
                <button 
                 onClick={connectWallet}
                 type="button"
-                className="flex items-center gap-2 px-4 h-9 bg-white text-ink rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-brand-green transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] cursor-pointer"
+                className="flex items-center gap-2 px-4 h-9 bg-gradient-brand text-ink rounded-lg text-[10px] font-bold uppercase tracking-widest glow-brand-sm hover:scale-[1.02] transition-all cursor-pointer"
                >
                  <Wallet className="w-3 h-3" />
                  Connect Wallet
@@ -830,6 +864,7 @@ function AppContent() {
                        profile={profile} 
                        address={address || "SP0000...0000"} 
                        stxPrice={stxPrice}
+                       tokenBalances={tokenBalances}
                      />
 
                      <div className="bg-surface border border-line rounded-2xl p-6">
