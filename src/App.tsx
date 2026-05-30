@@ -49,8 +49,6 @@ import AboutModal from "./components/AboutModal";
 
 import StacksDonation from "./components/StacksDonation";
 
-const STORAGE_KEY = "twinpay_user_profile";
-
 // Read the connected Stacks address from the persistent UserSession.
 function getStacksAddress(): string | null {
   try {
