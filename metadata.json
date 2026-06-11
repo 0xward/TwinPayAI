@@ -1,0 +1,6 @@
+{
+  "name": "TwinPay AI",
+  "description": "Deterministic financial AI for Stacks Mainnet. TwinPay analyzes transactions, prepares execution data for the Leather and Xverse wallets, and optimizes spending based on budget personalities, secured by Bitcoin finality.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

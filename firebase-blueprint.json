@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User's financial personality and preferences",
+      "type": "object",
+      "properties": {
+        "personality": { "type": "string" },
+        "monthly_budget": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["personality", "monthly_budget"]
+    },
+    "TransactionRecord": {
+      "title": "Transaction Record",
+      "description": "A record of an executed transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "item": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "token": { "type": "string" },
+        "recipient": { "type": "string" },
+        "decision": { "type": "string" },
+        "verdict": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "item", "category", "amount", "token", "recipient", "decision", "verdict", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile data"
+    },
+    "users/{userId}/transactions/{txId}": {
+      "schema": "TransactionRecord",
+      "description": "User transaction history"
+    }
+  }
+}
