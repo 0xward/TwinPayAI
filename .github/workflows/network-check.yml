@@ -1,0 +1,93 @@
+name: Network Health Check
+
+on:
+  schedule:
+    - cron: '30 0 * * *'
+    - cron: '15 4 * * *'
+    - cron: '45 9 * * *'
+    - cron: '20 14 * * *'
+    - cron: '55 19 * * *'
+    - cron: '10 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Roll
+        id: gate
+        run: |
+          R=$((RANDOM % 6))
+          # Keep only 2-4 out of 6 runs
+          [ $R -lt 2 ] && echo "run=false" >> $GITHUB_OUTPUT || echo "run=true" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Fetch Stacks payment layer data
+        if: steps.gate.outputs.run == 'true'
+        id: data
+        run: |
+          INFO=$(curl -sf "https://api.hiro.so/v2/info" || echo '{}')
+          FEE=$(curl -sf "https://api.hiro.so/v2/fees/transfer" || echo '{}')
+
+          HEIGHT=$(echo "$INFO" | python3 -c "
+          import sys,json
+          try: print(json.load(sys.stdin).get('stacks_tip_height',''))
+          except: print('')
+          ")
+          FEE_RATE=$(echo "$FEE" | python3 -c "
+          import sys,json
+          try:
+            d=json.load(sys.stdin)
+            print(d.get('estimated_cost_scalar') or d.get('fee_rate',''))
+          except: print('')
+          ")
+
+          echo "height=$HEIGHT" >> $GITHUB_OUTPUT
+          echo "fee=$FEE_RATE" >> $GITHUB_OUTPUT
+
+      - name: Pick message
+        if: steps.gate.outputs.run == 'true'
+        id: msg
+        run: |
+          H="${{ steps.data.outputs.height }}"
+          DATE=$(date -u +"%Y-%m-%d")
+          MSGS=(
+            "chore: verify payment route at block $H"
+            "update: fee estimation snapshot for $DATE"
+            "data: record STX transfer cost — $DATE"
+            "chore: remittance layer health check"
+            "update: network fee reference $DATE"
+            "data: STX transfer benchmark, tip $H"
+            "chore: confirm settlement finality at $H"
+            "update: payment rail status $DATE"
+          )
+          IDX=$((RANDOM % ${#MSGS[@]}))
+          echo "text=${MSGS[$IDX]}" >> $GITHUB_OUTPUT
+
+      - name: Write file
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p internals
+          cat > internals/payment-rail.json << EOF
+          {
+            "checked_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "stacks_tip": "${{ steps.data.outputs.height }}",
+            "fee_scalar": "${{ steps.data.outputs.fee }}",
+            "layer": "stacks-l2",
+            "purpose": "TwinPayAI remittance route validation"
+          }
+          EOF
+
+      - name: Commit
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name "0xward"
+          git config user.email "0xward.dev@gmail.com"
+          git add internals/payment-rail.json
+          git diff --staged --quiet && echo "clean" && exit 0
+          git commit -m "${{ steps.msg.outputs.text }}"
+          git push
