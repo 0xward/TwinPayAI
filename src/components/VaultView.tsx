@@ -18,9 +18,10 @@ import {
   CheckCircle,
   ExternalLink,
   Lock,
-  Unlock,
   TrendingDown,
   Clock,
+  Sparkles,
+  Wand2,
 } from 'lucide-react';
 import {
   openContractCall,
@@ -44,15 +45,18 @@ import {
   encodeExecuteTransferArgs,
   type VaultInfo,
 } from '../services/vaultService';
+import { suggestVaultLimit } from '../services/groqService';
+import { UserProfile } from '../types';
 
 interface VaultViewProps {
   address: string | null;
   onLog: (msg: string) => void;
+  profile?: UserProfile;
 }
 
 type TxStatus = 'idle' | 'pending' | 'success' | 'error';
 
-export default function VaultView({ address, onLog }: VaultViewProps) {
+export default function VaultView({ address, onLog, profile }: VaultViewProps) {
   const [vault, setVault] = useState<VaultInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [txStatus, setTxStatus] = useState<TxStatus>('idle');
@@ -61,6 +65,8 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
   // Configure form
   const [limitInput, setLimitInput] = useState('');
   const [showConfigure, setShowConfigure] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<{ amount: number; reasoning: string } | null>(null);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   // Test transfer form
   const [testAmount, setTestAmount] = useState('');
@@ -85,6 +91,32 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
   useEffect(() => {
     loadVault();
   }, [loadVault]);
+
+  // ── Auto-Pilot: AI-suggested limit ────────────────────────────────────
+  const requestAiSuggestion = useCallback(async () => {
+    if (!profile) return;
+    setLoadingSuggestion(true);
+    try {
+      const result = await suggestVaultLimit(profile);
+      setAiSuggestion({ amount: result.suggested_limit_stx, reasoning: result.reasoning });
+      onLog(`[AI] Suggested vault limit: ${result.suggested_limit_stx} STX`);
+    } catch {
+      onLog('[AI] Could not generate a vault limit suggestion.');
+    } finally {
+      setLoadingSuggestion(false);
+    }
+  }, [profile, onLog]);
+
+  // Fetch a suggestion automatically the first time an unconfigured user opens the configure panel
+  useEffect(() => {
+    if (showConfigure && !vault && !aiSuggestion && !loadingSuggestion && profile) {
+      requestAiSuggestion();
+    }
+  }, [showConfigure, vault, aiSuggestion, loadingSuggestion, profile, requestAiSuggestion]);
+
+  const applyAiSuggestion = () => {
+    if (aiSuggestion) setLimitInput(String(aiSuggestion.amount));
+  };
 
   // ── configure-vault ───────────────────────────────────────────────────
   const handleConfigure = () => {
@@ -238,7 +270,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
     <div className="space-y-6">
       {/* Header */}
       <div
-        className="relative overflow-hidden rounded-2xl p-8 border border-brand-green/20"
+        className="relative overflow-hidden rounded-2xl p-8 border border-brand-orange/20 ledger-strip"
         style={{
           background: 'linear-gradient(135deg, rgba(17,20,28,0.95) 0%, rgba(11,14,20,0.98) 100%)',
         }}
@@ -247,24 +279,24 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(74,222,128,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.04) 1px, transparent 1px)',
+              'linear-gradient(rgba(255,122,24,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,122,24,0.04) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
           }}
         />
         <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(74,222,128,0.10) 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, rgba(255,122,24,0.10) 0%, transparent 70%)' }} />
 
         <div className="relative z-10 flex items-end justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-green/70">
+              <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-orange/70">
                 On-Chain Spending Control
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white leading-none">
+            <h2 className="font-display text-3xl sm:text-4xl text-white leading-none">
               TwinPay
-              <span className="block text-brand-green">Vault</span>
+              <span className="block text-gradient-brand">Vault</span>
             </h2>
             <p className="text-sm text-ghost mt-3 max-w-sm">
               Configure your on-chain spending limit. Every STX transfer is enforced by the smart contract.
@@ -282,14 +314,31 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
             <button
               onClick={loadVault}
               disabled={loading}
-              className="p-2.5 rounded-xl border border-brand-green/20 bg-brand-green/5 hover:bg-brand-green/10 transition-all disabled:opacity-50"
+              className="p-2.5 rounded-xl border border-brand-orange/20 bg-brand-orange/5 hover:bg-brand-orange/10 transition-all disabled:opacity-50"
               title="Refresh vault"
             >
-              <RefreshCw className={`w-4 h-4 text-brand-green ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-brand-orange ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Proactive: idle balance nudge — the AI "checking in" instead of waiting to be asked */}
+      <AnimatePresence>
+        {vault && vault.active && vault.remainingStx > 0.01 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 p-4 rounded-xl border border-brass/25 bg-brass/5"
+          >
+            <Sparkles className="w-4 h-4 text-brass shrink-0" />
+            <p className="text-[12px] text-white/80 leading-relaxed">
+              You still have <span className="text-brass font-bold num-display">{vault.remainingStx.toFixed(4)} STX</span> available
+              this window. TwinPay AI will keep enforcing your limit automatically — no action needed unless you want to spend it.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tx Status Banner */}
       <AnimatePresence>
@@ -302,7 +351,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
               txStatus === 'pending'
                 ? 'bg-brand-gold/10 border-brand-gold/30 text-brand-gold'
                 : txStatus === 'success'
-                ? 'bg-brand-green/10 border-brand-green/30 text-brand-green'
+                ? 'bg-ok/10 border-ok/30 text-ok'
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
             }`}
           >
@@ -326,7 +375,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 {vault?.active
-                  ? <ShieldCheck className="w-5 h-5 text-brand-green" />
+                  ? <ShieldCheck className="w-5 h-5 text-ok" />
                   : vault
                   ? <ShieldOff className="w-5 h-5 text-red-400" />
                   : <Shield className="w-5 h-5 text-muted" />
@@ -339,7 +388,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                 <span
                   className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
                     vault.active
-                      ? 'bg-brand-green/10 border-brand-green/30 text-brand-green'
+                      ? 'bg-ok/10 border-ok/30 text-ok'
                       : 'bg-red-500/10 border-red-500/30 text-red-400'
                   }`}
                 >
@@ -361,7 +410,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                   <div className="w-full h-2.5 bg-ink rounded-full overflow-hidden">
                     <motion.div
                       className={`h-full rounded-full ${
-                        spentPct > 80 ? 'bg-red-500' : spentPct > 50 ? 'bg-brand-gold' : 'bg-brand-green'
+                        spentPct > 80 ? 'bg-red-500' : spentPct > 50 ? 'bg-brand-gold' : 'bg-ok'
                       }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${spentPct}%` }}
@@ -370,7 +419,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                   </div>
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-ghost">{spentPct.toFixed(1)}% used</span>
-                    <span className="text-[10px] text-brand-green font-mono font-bold">
+                    <span className="text-[10px] text-ok font-mono font-bold">
                       {vault.remainingStx.toFixed(4)} STX remaining
                     </span>
                   </div>
@@ -400,7 +449,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                     <div className="text-[9px] uppercase text-muted font-bold mb-1 tracking-widest flex items-center gap-1">
                       <Clock className="w-2.5 h-2.5" /> Window
                     </div>
-                    <div className="text-base font-bold font-mono text-brand-green">
+                    <div className="text-base font-bold font-mono text-ok">
                       {VAULT_WINDOW_BLOCKS.toLocaleString()}
                     </div>
                     <div className="text-[9px] text-ghost">blocks (~30 days)</div>
@@ -436,16 +485,16 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="panel-glass rounded-2xl p-6 border border-brand-green/20"
+                className="panel-glass rounded-2xl p-6 border border-ok/20"
               >
                 <button
                   onClick={() => setShowTestTransfer(!showTestTransfer)}
                   className="w-full flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-brand-green" />
+                    <Zap className="w-4 h-4 text-ok" />
                     <span className="text-sm font-bold uppercase tracking-wide">Vault Transfer</span>
-                    <span className="text-[9px] px-1.5 py-0.5 bg-brand-green/10 border border-brand-green/20 text-brand-green rounded font-bold uppercase">
+                    <span className="text-[9px] px-1.5 py-0.5 bg-ok/10 border border-ok/20 text-ok rounded font-bold uppercase">
                       execute-transfer
                     </span>
                   </div>
@@ -477,7 +526,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                               value={testAmount}
                               onChange={(e) => setTestAmount(e.target.value)}
                               placeholder="0.0000"
-                              className="w-full px-4 py-3 bg-ink border border-line rounded-xl font-mono text-sm text-white placeholder:text-white/20 outline-none focus:border-brand-green/50 transition-colors"
+                              className="w-full px-4 py-3 bg-ink border border-line rounded-xl font-mono text-sm text-white placeholder:text-white/20 outline-none focus:border-ok/50 transition-colors"
                             />
                           </div>
                           <div>
@@ -489,13 +538,13 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                               value={testRecipient}
                               onChange={(e) => setTestRecipient(e.target.value)}
                               placeholder="SP..."
-                              className="w-full px-4 py-3 bg-ink border border-line rounded-xl font-mono text-xs text-white placeholder:text-white/20 outline-none focus:border-brand-green/50 transition-colors"
+                              className="w-full px-4 py-3 bg-ink border border-line rounded-xl font-mono text-xs text-white placeholder:text-white/20 outline-none focus:border-ok/50 transition-colors"
                             />
                           </div>
                           <button
                             onClick={handleVaultTransfer}
                             disabled={txStatus === 'pending' || !testAmount || !testRecipient}
-                            className="w-full py-3 bg-gradient-to-r from-brand-green/80 to-brand-green rounded-xl font-bold uppercase text-xs tracking-widest text-ink disabled:opacity-40 hover:brightness-110 transition-all"
+                            className="w-full py-3 bg-gradient-to-r from-ok/80 to-ok rounded-xl font-bold uppercase text-xs tracking-widest text-ink disabled:opacity-40 hover:brightness-110 transition-all"
                           >
                             {txStatus === 'pending' ? 'Broadcasting…' : 'Execute via Vault'}
                           </button>
@@ -538,6 +587,43 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                     <p className="text-[11px] text-ghost">
                       Sets your per-window spending limit. The window is {VAULT_WINDOW_BLOCKS.toLocaleString()} burn-blocks (~30 days).
                     </p>
+
+                    {/* Auto-Pilot AI suggestion */}
+                    {!vault && (
+                      <div className="p-3.5 rounded-xl border border-brass/25 bg-brass/5">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <Wand2 className="w-3.5 h-3.5 text-brass" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-brass">Auto-Pilot suggestion</span>
+                        </div>
+                        {loadingSuggestion ? (
+                          <div className="flex items-center gap-2 text-[11px] text-ghost py-1">
+                            <div className="w-3 h-3 border border-brass border-t-transparent rounded-full animate-spin" />
+                            Calculating a sensible limit for you…
+                          </div>
+                        ) : aiSuggestion ? (
+                          <div className="flex items-end justify-between gap-3 flex-wrap">
+                            <div>
+                              <div className="num-display text-xl text-white">{aiSuggestion.amount} <span className="text-xs text-ghost">STX</span></div>
+                              <p className="text-[11px] text-ghost mt-1 max-w-xs leading-relaxed">{aiSuggestion.reasoning}</p>
+                            </div>
+                            <button
+                              onClick={applyAiSuggestion}
+                              className="shrink-0 px-3 py-1.5 rounded-lg bg-brass/15 border border-brass/30 text-brass text-[10px] font-bold uppercase tracking-wide hover:bg-brass/25 transition-all"
+                            >
+                              Use this
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={requestAiSuggestion}
+                            className="text-[11px] text-brass underline hover:opacity-80"
+                          >
+                            Ask AI for a suggested limit
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-[9px] uppercase text-muted font-bold tracking-widest mb-1.5">
                         Limit (STX)
@@ -572,7 +658,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
           {vault && (
             <div className="panel-glass rounded-2xl p-5 border border-line">
               <div className="flex items-center gap-2 mb-3">
-                <Power className={`w-4 h-4 ${vault.active ? 'text-brand-green' : 'text-red-400'}`} />
+                <Power className={`w-4 h-4 ${vault.active ? 'text-ok' : 'text-red-400'}`} />
                 <span className="text-sm font-bold uppercase tracking-wide">Vault Status</span>
               </div>
               <p className="text-[11px] text-ghost mb-4">
@@ -586,7 +672,7 @@ export default function VaultView({ address, onLog }: VaultViewProps) {
                 className={`w-full py-3 rounded-xl font-bold uppercase text-xs tracking-widest disabled:opacity-40 hover:brightness-110 transition-all ${
                   vault.active
                     ? 'bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20'
-                    : 'bg-brand-green/10 border border-brand-green/30 text-brand-green hover:bg-brand-green/20'
+                    : 'bg-ok/10 border border-ok/30 text-ok hover:bg-ok/20'
                 }`}
               >
                 {vault.active

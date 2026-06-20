@@ -82,9 +82,9 @@ export default function ContactsView({ contacts, onAdd, onDelete }: ContactsView
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex justify-between items-end mb-8 flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight uppercase mb-1">Address Book</h2>
+          <h2 className="font-display text-2xl sm:text-3xl text-white mb-1">Address Book</h2>
           <p className="text-[10px] text-muted font-mono uppercase tracking-widest">
             Stacks Contacts // Saved Addresses
           </p>
@@ -217,7 +217,7 @@ export default function ContactsView({ contacts, onAdd, onDelete }: ContactsView
                 <button
                   onClick={() => handleDelete(contact.id)}
                   disabled={deletingId === contact.id}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 disabled:opacity-50"
+                  className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 disabled:opacity-50 shrink-0"
                   title="Delete contact"
                 >
                   {deletingId === contact.id ? (

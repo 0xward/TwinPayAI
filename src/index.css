@@ -1,12 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  /* Arkham-style dark dApp palette: Orange / light-orange / black */
+  /* Arkham-style dark dApp palette: Orange / light-orange / black + gold accent for value surfaces */
   --color-brand-green: #FF7A18;      /* primary accent (orange) */
   --color-brand-orange: #FF7A18;     /* primary accent (orange) */
   --color-brand-light: #FFB066;      /* light orange */
   --color-brand-gold: #FFB066;       /* light orange (legacy alias) */
   --color-brand-deep: #C2410C;       /* deep orange */
+
+  /* Brass/gold — reserved for value, yield, and ledger surfaces (not used for nav/UI chrome) */
+  --color-brass: #D4AF37;
+  --color-brass-soft: #E8CB6B;
+  --color-brass-deep: #8A6A1E;
+
+  /* Quiet positive-state green, distinct from brand orange, used sparingly for "good news" */
+  --color-ok: #4ADE80;
+  --color-ok-deep: #14532D;
 
   /* Near-black surfaces with a subtle warm tint */
   --color-ink: #07090D;
@@ -18,10 +27,13 @@
   --color-ghost: #9CA3AF;
 
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Fraunces", "Newsreader", Georgia, serif;
 
   /* Signature 3-stop gradient: light orange -> orange -> black */
   --gradient-brand: linear-gradient(135deg, #FFB066 0%, #FF7A18 45%, #07090D 120%);
   --gradient-brand-soft: linear-gradient(135deg, rgba(255,176,102,0.18) 0%, rgba(255,122,24,0.12) 45%, rgba(7,9,13,0) 100%);
+  /* Brass ledger-strip gradient — the recurring "this is real value" signature */
+  --gradient-ledger: linear-gradient(90deg, rgba(212,175,55,0) 0%, #D4AF37 18%, #FFB066 50%, #D4AF37 82%, rgba(212,175,55,0) 100%);
 }
 
 @layer base {
@@ -53,6 +65,12 @@
   background-clip: text;
   color: transparent;
 }
+.text-gradient-brass {
+  background-image: linear-gradient(135deg, #E8CB6B 0%, #D4AF37 60%, #8A6A1E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .border-gradient-brand {
   border: 1px solid transparent;
   background:
@@ -78,6 +96,12 @@
   border: 1px solid var(--color-line);
 }
 
+/* Quieter surface for secondary/navigational cards — reserves panel-glass + glow drama for hero & value cards only */
+.panel-quiet {
+  background: rgba(17,20,28,0.55);
+  border: 1px solid rgba(35,41,54,0.7);
+}
+
 .pixel-border {
   border: 1px solid var(--color-line);
 }
@@ -86,6 +110,34 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
+}
+
+/* ── Ledger Strip — signature element for cards that represent on-chain value
+   (vault balance, yield, limits). A thin brass-gradient hairline that reads
+   like a wax-seal/foil strip, distinguishing "real money" cards from purely
+   navigational or informational ones. ── */
+.ledger-strip {
+  position: relative;
+}
+.ledger-strip::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-image: var(--gradient-ledger);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Display/serif numerals for headline values — pairs with the sans UI face for contrast */
+.font-display {
+  font-family: var(--font-display);
+}
+.num-display {
+  font-family: var(--font-display);
+  font-feature-settings: "lnum" 1, "tnum" 1;
+  font-optical-sizing: auto;
 }
 
 /* Slim, on-brand scrollbar */

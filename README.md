@@ -1,67 +1,208 @@
-# TwinPay AI // Agentic Payments for Stacks
+# TwinPay AI // Agentic Payments on Stacks
 
-TwinPay AI is an AI-powered personal finance and payments app for the **Stacks** blockchain, the leading Bitcoin Layer 2. You describe what you want in plain English (for example, *"send 5 STX to SP... for coffee"*), and an AI agent analyzes the request against your budget, audits the recipient, and prepares a transaction that you sign with your own Stacks wallet. Every payment settles on Stacks and is ultimately secured by Bitcoin finality.
+**TwinPay AI** is an AI-powered personal finance and payments agent built on **Stacks**, the leading Bitcoin Layer 2. Describe a payment in plain English — *"send 5 STX to SP... for coffee"* — and an AI decision engine audits the recipient, checks it against your budget, and prepares a transaction for you to sign with your own wallet. Every payment settles on Stacks Mainnet and inherits Bitcoin's finality.
 
-## What it does
-- **AI money management:** The agent reviews each proposed payment against your monthly budget and chosen spending personality (conservative, balanced, or aggressive) and returns an `approve` / `modify` / `reject` decision with a confidence score and reasoning.
-- **Pay by intent:** Describe a payment in natural language; the AI turns it into a concrete, signable Stacks transaction plan.
-- **Real on-chain execution:** You always sign in your own wallet. TwinPay never holds funds or signs on your behalf.
-- **Post-payment insight:** After each transaction, the AI compares what you actually spent against its suggestion and records the outcome.
+Beyond a single payment, TwinPay is built to grow with you: an on-chain spending vault, proactive AI insights, Bitcoin stacking visibility, recurring payments, and a verifiable track record — all on the same non-custodial foundation.
 
-## How it works
-1. **Connect** a Stacks wallet (Leather or Xverse) with `@stacks/connect`.
-2. **Propose** a payment (description, amount, asset, recipient `SP...` address).
-3. **Analyze** — the request is sent to the Gemini AI engine, which returns a structured decision and a deterministic transaction plan.
+---
+
+## Table of Contents
+
+- [Core Concept](#core-concept)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Smart Contract — TwinPay Vault](#smart-contract--twinpay-vault)
+- [Security Model](#security-model)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Core Concept
+
+TwinPay never holds your funds and never signs on your behalf. The AI's job is limited to **proposing and auditing** — every transfer is reviewed and signed by you, inside your own Leather or Xverse wallet. On top of that, an on-chain Clarity contract (TwinPay Vault) lets you enforce your own spending limit at the protocol level, so your budget isn't just a UI suggestion.
+
+## Features
+
+### Payments & Decisioning
+- **AI Decision Engine** — a Groq-hosted LLM reviews each proposed payment against your monthly budget, spending personality (conservative / balanced / aggressive), and recent history, returning `approve` / `modify` / `reject` with a confidence score and reasoning.
+- **Pay by intent** — describe what you're paying for in natural language; TwinPay turns it into a concrete, signable transaction plan.
+- **On-chain address auditing** — every recipient is checked against Stacks Mainnet via the Hiro API before you're asked to sign.
+- **Multi-asset support** — STX (native), and SIP-010 tokens: sBTC, aeUSDC, USDCx.
+- **BNS resolution** — pay `name.btc` addresses directly; TwinPay resolves them to a Stacks principal before signing.
+- **Payment Requests** — generate a shareable link + QR code to receive a payment for a specific amount and asset.
+
+### TwinPay Vault (on-chain)
+- A deployed **Clarity smart contract** on Stacks Mainnet that enforces a per-window STX spending limit at the protocol level — not just in the app's UI.
+- **Vault Auto-Pilot** — the AI suggests a sensible limit based on your budget, balance, and spending personality when you first configure the vault.
+- Proactive "remaining balance" prompts so the vault feels like an active co-pilot, not a buried setting.
+
+### Growth & Retention tools (the "More" hub)
+- **AI Insight Digest** — a proactive, cached summary of your recent spending and vault status, with one concrete suggested next step — your co-pilot checking in, not just reacting to new payments.
+- **BTC Yield** — a read-only panel showing live Proof-of-Transfer (PoX) network parameters (minimum stacking threshold, current cycle, network participation) and your personal stacking status, with links to pooled/liquid-stacking providers. TwinPay never moves your STX into stacking on your behalf.
+- **Recurring Payments** — schedule a repeating payment (rent, subscriptions, allowances) once; when it's due, TwinPay surfaces a "Run now" action that routes through the exact same AI audit + wallet-signature flow as a one-off payment.
+- **Trust Score** — a running score and day-streak computed from your approval history, laying the groundwork for an on-chain reputation system.
+- **Multisig Vault** & **sBTC Credit Line** — on the roadmap; see [Roadmap](#roadmap).
+
+### Account
+- **Transaction Ledger** — full history with AI reasoning, network context, and a link to the Stacks Explorer for every transaction.
+- **Address Book** — save contacts by Stacks address or BNS name.
+- **Analytics** — spending breakdowns by token/category and a month-over-month comparison.
+
+## How It Works
+
+1. **Connect** a Stacks wallet (Leather or Xverse) via `@stacks/connect`.
+2. **Propose** a payment — description, amount, asset, and recipient (`SP...` address or `name.btc`).
+3. **Analyze** — the request is sent to the AI decision engine (Groq), which returns a structured decision and a deterministic transaction plan.
 4. **Authorize** — you review the plan and sign it in your wallet:
    - **STX** transfers use `openSTXTransfer` (amounts handled in microSTX).
-   - **SIP-010 tokens** (sBTC, aeUSDC) use `openContractCall` against the token's `transfer` function, protected by an exact fungible **post-condition** in `Deny` mode so no more than the intended amount can move.
-5. **Track** — confirmed transactions are stored in Firestore and linked to the Stacks Explorer.
+   - **SIP-010 tokens** (sBTC, aeUSDC, USDCx) use `openContractCall` against the token's `transfer` function, protected by an exact fungible **post-condition** in `Deny` mode so no more than the intended amount can move.
+   - If your **TwinPay Vault** is active, native STX transfers route through `execute-transfer` on the vault contract, which enforces your configured limit on-chain.
+5. **Track** — confirmed transactions are stored in Firestore and linked to the Stacks Explorer; recurring schedules and contacts are stored the same way.
 
-Live STX and SIP-010 balances are read from the public **Hiro API**, and the STX/USD price is sourced from CoinGecko with a Binance fallback.
+Live STX and SIP-010 balances, BNS resolution, and PoX network parameters are read from the public **Hiro API**. STX/USD pricing is sourced from CoinGecko with a Binance fallback.
 
 ## Tech Stack
-- **Frontend:** React 19 + Vite + TypeScript
-- **Styling:** Tailwind CSS (dark, Arkham-style aesthetic with an orange gradient)
-- **Blockchain:** Stacks (Bitcoin L2) via `@stacks/connect`, `@stacks/transactions`, `@stacks/network`
-- **Wallets:** Leather & Xverse
-- **Chain data:** Hiro API (balances) and Stacks Explorer (links)
-- **AI:** Groq AI
-- **Infrastructure:** Firebase (Firestore & Auth)
 
-## Setup & Installation
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + Vite + TypeScript |
+| Styling | Tailwind CSS v4 (custom dark theme, brass/orange accents, Fraunces display type) |
+| Animation | Motion (`motion/react`) |
+| Blockchain | Stacks (Bitcoin L2) via `@stacks/connect`, `@stacks/transactions`, `@stacks/network` |
+| Smart Contracts | Clarity 2 (`contract/twinpay-vault.clar`) |
+| Wallets | Leather & Xverse |
+| Chain data | Hiro API (balances, BNS, PoX) + Stacks Explorer (links) |
+| AI | Groq (LLM-based decision engine) |
+| Infrastructure | Firebase (Firestore for history, contacts, recurring schedules) |
+| Icons | lucide-react |
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/arawrdn/TwinPay-AI.git
-   cd TwinPay-AI
-   ```
+## Project Structure
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+```
+TwinPayAI-main/
+├── contract/
+│   ├── twinpay-vault.clar      # On-chain spending-limit vault (Clarity 2, deployed on Mainnet)
+│   └── DEPLOY.md               # Contract address, functions, and deployment notes
+├── public/                     # Static assets (logo, etc.)
+├── src/
+│   ├── components/             # All views and UI components
+│   │   ├── LandingPage.tsx     # Marketing/landing page (features, how-it-works, FAQ)
+│   │   ├── TransactionForm.tsx # "Propose a transaction" form (Engine view)
+│   │   ├── DecisionCard.tsx    # AI decision result card
+│   │   ├── VaultView.tsx       # TwinPay Vault configure/monitor UI + Auto-Pilot
+│   │   ├── InsightDigest.tsx   # Proactive AI spending/vault digest
+│   │   ├── YieldView.tsx       # BTC Yield / stacking panel
+│   │   ├── RecurringView.tsx   # Recurring payments scheduler
+│   │   ├── ReputationView.tsx  # Trust Score / streaks
+│   │   ├── MoreView.tsx        # "More" hub (replaces the old standalone Analytics tab)
+│   │   ├── MultisigView.tsx    # Roadmap placeholder
+│   │   ├── CreditLineView.tsx  # Roadmap placeholder
+│   │   ├── HistoryView.tsx     # Transaction ledger (table + mobile card list)
+│   │   ├── ContactsView.tsx    # Address book
+│   │   ├── RequestView.tsx     # Payment request link/QR generator
+│   │   ├── AnalyticsView.tsx   # Spending analytics
+│   │   ├── WalletCard.tsx      # Connected wallet summary
+│   │   ├── AboutModal.tsx      # About / How-to-use / FAQ modal
+│   │   └── OnboardingModal.tsx # First-run onboarding walkthrough
+│   ├── services/
+│   │   ├── groqService.ts      # AI decision engine, insight digest, vault-limit suggestions
+│   │   ├── vaultService.ts     # Reads/encodes calls to the TwinPay Vault contract
+│   │   └── recurringService.ts # Firestore CRUD for recurring payment schedules
+│   ├── lib/
+│   │   └── firebase.ts         # Firebase app/Firestore initialization
+│   ├── stacks-config.ts        # Network config, Hiro API helpers, BNS + PoX fetchers
+│   ├── types.ts                # Shared TypeScript types
+│   └── App.tsx                 # Root component, routing, wallet + Firestore wiring
+├── .env.example
+├── package.json
+└── LICENSE
+```
 
-3. **Configure environment variables:**
-   Create a `.env` file based on `.env.example`:
-   - `GEMINI_API_KEY` — Google Gemini API key used by the AI decision engine.
-   - `VITE_FIREBASE_CONFIG` — JSON string with your Firebase project configuration.
-   - `APP_URL` — the URL where the app is hosted.
+## Getting Started
 
-4. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+### Prerequisites
+- Node.js 18+
+- A [Leather](https://leather.io) or [Xverse](https://xverse.app) wallet (for testing real signing flows)
+- A free [Groq](https://console.groq.com) API key
+- A [Firebase](https://firebase.google.com) project (Firestore enabled)
 
-5. **Type-check / build:**
-   ```bash
-   npm run lint   # tsc --noEmit
-   npm run build
-   ```
+### Installation
 
-## Security
-- TwinPay AI is **non-custodial**: it never controls your keys or funds. All transactions require an explicit signature in your wallet.
-- SIP-010 transfers attach a strict post-condition so a transaction cannot transfer more than the amount you approved.
-- The AI analysis is an aid, not a guarantee. Always verify the recipient and amount in your wallet before signing.
+```bash
+git clone https://github.com/arawrdn/TwinPay-AI.git
+cd TwinPay-AI
+npm install
+```
+
+### Configure environment variables
+
+Copy `.env.example` to `.env` and fill in your own values (see [Environment Variables](#environment-variables) below).
+
+```bash
+cp .env.example .env
+```
+
+### Run the development server
+
+```bash
+npm run dev
+```
+
+### Type-check and build
+
+```bash
+npm run lint    # tsc --noEmit
+npm run build   # vite build → dist/
+npm run preview # preview the production build locally
+```
+
+## Environment Variables
+
+All variables are documented with comments in [`.env.example`](./.env.example).
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_GROQ_API_KEY` | Yes | Groq API key powering the AI decision engine, insight digest, and vault-limit suggestions. Get one at [console.groq.com](https://console.groq.com). |
+| `VITE_HIRO_API_KEY` | Recommended | Hiro API key for higher rate limits when reading balances, BNS names, and PoX data. Get one at [platform.hiro.so](https://platform.hiro.so). |
+| `VITE_FIREBASE_CONFIG` | Yes | The full Firebase Web App config object (JSON string) — used for Firestore (transaction history, contacts, recurring schedules). |
+
+## Smart Contract — TwinPay Vault
+
+| Field | Value |
+|---|---|
+| **Contract** | `SPQ189E66S20X7ATY7794HBY6743JE9YJMCKHAEF.twinpay-vault` |
+| **Network** | Stacks Mainnet |
+| **Language** | Clarity 2 |
+| **Source** | [`contract/twinpay-vault.clar`](./contract/twinpay-vault.clar) |
+
+The vault lets a user configure a per-window STX spending limit that is enforced **on-chain** — once active, `execute-transfer` calls are checked against the remaining allowance by the contract itself, independent of the frontend. See [`contract/DEPLOY.md`](./contract/DEPLOY.md) for the full function reference and deployment notes.
+
+## Security Model
+
+- **Non-custodial** — TwinPay never controls your private keys or funds. Every transaction requires an explicit signature in your own wallet.
+- **Strict post-conditions** — SIP-010 token transfers attach an exact fungible post-condition in `Deny` mode, so a transaction cannot move more than the amount you approved.
+- **On-chain enforcement, not just UI** — once configured, the TwinPay Vault contract enforces your spending limit at the protocol level.
+- **AI as advisor, not authority** — the AI's analysis is an aid, not a guarantee or an autopilot. Recurring payments and vault suggestions always require your review and your wallet signature before anything is broadcast.
+- Always verify the recipient address and amount inside your wallet's signing popup before confirming. Blockchain transactions are irreversible.
+
+## Roadmap
+
+- [x] AI Decision Engine (approve / modify / reject with reasoning)
+- [x] TwinPay Vault — on-chain spending limit (deployed, Mainnet)
+- [x] Vault Auto-Pilot (AI-suggested limits)
+- [x] AI Insight Digest (proactive spending/vault summaries)
+- [x] BTC Yield panel (live PoX data + stacking provider links)
+- [x] Recurring Payments
+- [x] Trust Score (off-chain v1, computed from transaction history)
+- [ ] **Multisig Vault** — shared vaults with N-of-M threshold approval, extending the current Vault contract
+- [ ] **sBTC Credit Line** — borrow STX against sBTC collateral without selling it, with on-chain price oracle and liquidation logic
+- [ ] On-chain Trust Score — mirror reputation milestones via contract events instead of client-side computation only
 
 ## License
-This project is licensed under the MIT License.
+
+This project is licensed under the **Apache License 2.0** — see [`LICENSE`](./LICENSE) for the full text.

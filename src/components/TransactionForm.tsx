@@ -133,7 +133,7 @@ export default function TransactionForm({
     >
       {/* Subtle top glow line */}
       <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,122,24,0.4), rgba(255,176,102,0.3), transparent)" }} />
+        style={{ background: "var(--gradient-ledger)" }} />
 
       {/* Faint mesh inside card */}
       <div className="absolute inset-0 pointer-events-none opacity-30"
@@ -146,7 +146,7 @@ export default function TransactionForm({
       <div className="relative z-10 px-7 pt-7 pb-5 flex items-center justify-between">
         <div>
           <p className="text-[9px] font-bold uppercase tracking-[0.35em] text-brand-green/60 mb-1">AI-Powered</p>
-          <h2 className="text-base font-black uppercase tracking-wide text-white">New Transaction</h2>
+          <h2 className="font-display text-xl text-white">New Transaction</h2>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-green/20 bg-brand-green/5">
           <Zap className="w-3 h-3 text-brand-green" />

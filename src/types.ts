@@ -87,7 +87,21 @@ export interface StackingInfo {
   rewardCycle?: number;
 }
 
-export type ViewType = 'landing' | 'engine' | 'history' | 'contacts' | 'request' | 'analytics' | 'vault';
+export type ViewType =
+  | 'landing'
+  | 'engine'
+  | 'history'
+  | 'contacts'
+  | 'request'
+  | 'analytics'
+  | 'vault'
+  | 'more'
+  | 'insights'
+  | 'yield'
+  | 'recurring'
+  | 'multisig'
+  | 'credit'
+  | 'reputation';
 
 export interface VaultStatus {
   configured: boolean;
@@ -98,3 +112,25 @@ export interface VaultStatus {
 }
 
 export type TwinPayMode = 'generate_personality' | 'decision' | 'compare' | 'auto_mode';
+
+export interface RecurringPayment {
+  id: string;
+  label: string;
+  amount: number;
+  token: TransactionToken;
+  recipient: string;
+  recipientLabel?: string;
+  intervalDays: number;
+  nextRunAt: string;
+  createdAt: string;
+  active: boolean;
+  lastRunAt?: string;
+  lastTxId?: string;
+}
+
+export interface ReputationEvent {
+  id: string;
+  kind: 'approved_payment' | 'vault_configured' | 'streak_milestone' | 'recurring_setup';
+  detail: string;
+  timestamp: string;
+}

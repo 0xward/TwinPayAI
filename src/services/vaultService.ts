@@ -11,7 +11,7 @@ import {
   uintCV,
   ClarityType,
   type ClarityValue,
-  type OptionalCV,
+  type SomeCV,
   type ResponseOkCV,
   type TupleCV,
   type UIntCV,
@@ -123,7 +123,7 @@ export async function fetchVaultInfo(address: string): Promise<VaultInfo | null>
     if (vaultCV.type === ClarityType.OptionalNone) return null;
     if (vaultCV.type !== ClarityType.OptionalSome) return null;
 
-    const tupleCV = (vaultCV as OptionalCV).value as TupleCV;
+    const tupleCV = (vaultCV as SomeCV).value as TupleCV;
     const d = tupleCV.data;
 
     const limitUstx = extractUint(d['limit-ustx']);

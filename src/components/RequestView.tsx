@@ -95,7 +95,7 @@ export default function RequestView({ userAddress }: RequestViewProps) {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold tracking-tight uppercase mb-1">Payment Request</h2>
+        <h2 className="font-display text-2xl sm:text-3xl text-white mb-1">Payment Request</h2>
         <p className="text-[10px] text-muted font-mono uppercase tracking-widest">
           Generate Invoice // Share & Receive
         </p>
@@ -241,7 +241,7 @@ export default function RequestView({ userAddress }: RequestViewProps) {
               </div>
 
               {/* Preview */}
-              <div className="bg-surface border border-brand-gold/20 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-surface border border-brand-gold/20 rounded-2xl overflow-hidden shadow-2xl ledger-strip">
                 <div className="p-5 border-b border-line bg-surface-bright">
                   <h3 className="text-sm font-bold uppercase tracking-wide text-brand-gold">
                     Payer Preview
@@ -252,9 +252,9 @@ export default function RequestView({ userAddress }: RequestViewProps) {
                     <span className="text-muted uppercase font-bold tracking-widest">Pay to</span>
                     <span className="font-mono text-ghost">{userAddress?.slice(0, 10)}...</span>
                   </div>
-                  <div className="flex justify-between text-[11px]">
+                  <div className="flex justify-between text-[11px] items-center">
                     <span className="text-muted uppercase font-bold tracking-widest">Amount</span>
-                    <span className="font-bold text-brand-gold font-mono">{amount} {token}</span>
+                    <span className="num-display font-bold text-brand-gold">{amount} <span className="font-sans text-[10px]">{token}</span></span>
                   </div>
                   {note && (
                     <div className="flex justify-between text-[11px]">

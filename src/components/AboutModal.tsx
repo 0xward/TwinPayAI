@@ -18,6 +18,8 @@ import {
   Globe,
   Lock,
   Coins,
+  Sparkles,
+  Repeat,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -37,15 +39,31 @@ const faqs = [
   },
   {
     q: "What tokens are supported?",
-    a: "Currently STX (native Stacks), sBTC (Bitcoin-pegged on Stacks), and aeUSDC (bridged USD stablecoin). More tokens can be added by updating the TOKEN_CONTRACTS config.",
+    a: "Currently STX (native Stacks), sBTC (Bitcoin-pegged on Stacks), aeUSDC, and USDCx. More tokens can be added by updating the TOKEN_CONTRACTS config.",
   },
   {
     q: "What is the AI actually doing?",
     a: "The AI (powered by Groq LLM) checks your monthly budget, your spending personality (conservative / balanced / aggressive), the recipient address validity, and proposes whether to approve, modify, or reject your transaction — with reasoning.",
   },
   {
+    q: "What does the TwinPay Vault smart contract do?",
+    a: "TwinPay Vault is a deployed Clarity contract on Stacks Mainnet that enforces a per-window STX spending limit on-chain. Once configured and active, every execute-transfer call is checked against your remaining allowance by the contract itself — not just by the app's interface.",
+  },
+  {
+    q: "What is the AI Insight Digest?",
+    a: "A proactive summary the AI generates from your recent activity and vault status — highlighting spending patterns, vault headroom, and one concrete suggestion. It's cached for a few hours so it feels like a check-in, not a spam notification.",
+  },
+  {
+    q: "Does TwinPay manage my stacking for me?",
+    a: "No. The BTC Yield panel is read-only — it shows live Proof-of-Transfer network parameters and your current stacking status, and links out to pool or liquid-stacking providers. TwinPay never moves your STX into stacking on your behalf.",
+  },
+  {
+    q: "How do Recurring Payments execute?",
+    a: "You schedule a payment once (amount, recipient, frequency). When it's due, TwinPay surfaces a 'Run now' action that routes through the exact same AI audit and wallet-signature flow as a one-off payment — there's no background auto-pay without your signature.",
+  },
+  {
     q: "Is my data stored anywhere?",
-    a: "Transaction history is stored in Firebase Firestore tied to your anonymous or Google session. Your wallet private keys are never accessible to TwinPay — all signing happens inside your Stacks wallet.",
+    a: "Transaction history, contacts, and recurring schedules are stored in Firebase Firestore keyed to your wallet address. Your wallet private keys are never accessible to TwinPay — all signing happens inside your Stacks wallet.",
   },
   {
     q: "What does 'Bitcoin-secured' mean?",
@@ -191,9 +209,11 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { icon: Bot, label: "AI Decision Engine", desc: "Groq LLM analyzes every transaction", color: "text-brand-green" },
-                      { icon: ShieldCheck, label: "Address Auditing", desc: "Auto-validates recipient addresses", color: "text-blue-400" },
-                      { icon: Coins, label: "Multi-Token", desc: "STX, sBTC, and aeUSDC", color: "text-brand-gold" },
+                      { icon: ShieldCheck, label: "TwinPay Vault", desc: "Live Clarity contract enforcing limits", color: "text-blue-400" },
+                      { icon: Coins, label: "Multi-Token", desc: "STX, sBTC, aeUSDC, USDCx", color: "text-brand-gold" },
                       { icon: Zap, label: "Bitcoin Finality", desc: "Settled on Stacks → anchored to BTC", color: "text-brand-orange" },
+                      { icon: Sparkles, label: "AI Insight Digest", desc: "Proactive spending & vault check-ins", color: "text-brass" },
+                      { icon: Repeat, label: "Recurring Payments", desc: "Schedule, then audit & sign when due", color: "text-brand-orange" },
                     ].map(({ icon: Icon, label, desc, color }) => (
                       <div key={label} className="p-3 bg-white/4 border border-white/8 rounded-xl">
                         <Icon className={`w-4 h-4 ${color} mb-2`} />
@@ -212,6 +232,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                       {[
                         "React + TypeScript",
                         "Stacks Connect",
+                        "Clarity Smart Contracts",
                         "Groq LLM",
                         "Firebase",
                         "Hiro API",

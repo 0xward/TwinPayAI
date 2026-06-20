@@ -156,3 +156,44 @@ export async function resolveBnsName(name: string): Promise<string | null> {
     return null;
   }
 }
+
+export interface PoxInfo {
+  minThresholdUstx: number;
+  minThresholdStx: number;
+  totalLiquidSupplyStx: number;
+  stackedUstx: number;
+  stackedStx: number;
+  participationPct: number;
+  currentCycleId: number;
+  rewardPhaseBlockLength: number;
+  prepareePhaseBlockLength: number;
+}
+
+/**
+ * Fetch live Proof-of-Transfer parameters — used to ground the BTC Yield
+ * panel in real network state instead of hardcoded assumptions, since the
+ * minimum stacking threshold changes every reward cycle.
+ */
+export async function fetchPoxInfo(): Promise<PoxInfo | null> {
+  try {
+    const res = await fetch(`${HIRO_API_BASE}/v2/pox`, { headers: hiroHeaders() });
+    if (!res.ok) return null;
+    const d = await res.json();
+    const minThresholdUstx = Number(d?.current_cycle?.min_threshold_ustx ?? 0);
+    const totalLiquidSupplyUstx = Number(d?.total_liquid_supply_ustx ?? 0);
+    const stackedUstx = Number(d?.current_cycle?.stacked_ustx ?? 0);
+    return {
+      minThresholdUstx,
+      minThresholdStx: minThresholdUstx / 1_000_000,
+      totalLiquidSupplyStx: totalLiquidSupplyUstx / 1_000_000,
+      stackedUstx,
+      stackedStx: stackedUstx / 1_000_000,
+      participationPct: totalLiquidSupplyUstx > 0 ? (stackedUstx / totalLiquidSupplyUstx) * 100 : 0,
+      currentCycleId: Number(d?.current_cycle?.id ?? 0),
+      rewardPhaseBlockLength: Number(d?.reward_phase_block_length ?? 2000),
+      prepareePhaseBlockLength: Number(d?.prepare_phase_block_length ?? 100),
+    };
+  } catch {
+    return null;
+  }
+}

@@ -83,6 +83,82 @@ export async function checkAutoMode(profile: any, limit: number): Promise<any> {
   );
 }
 
+export interface InsightDigest {
+  headline: string;
+  summary: string;
+  highlights: { label: string; detail: string; tone: "positive" | "warning" | "neutral" }[];
+  recommendation: string;
+  trend: "up" | "down" | "flat";
+}
+
+/**
+ * Generates a proactive spending/vault digest from recent transaction history.
+ * Designed to be called on a cadence (e.g. on app open, once per day) rather
+ * than only in reaction to a new transaction — this is what gives the AI a
+ * "check in on me" feel instead of a one-shot approval tool.
+ */
+export async function generateInsightDigest(
+  profile: { monthly_budget: number; personality: string; current_balance: number },
+  recentTransactions: TransactionRecord[],
+  vault?: { configured: boolean; active: boolean; limitStx: number; spentStx: number; remainingStx: number } | null
+): Promise<InsightDigest> {
+  const txContext =
+    recentTransactions.length > 0
+      ? recentTransactions
+          .map(
+            (t) =>
+              `- ${t.item} | $${t.amount} ${t.token} | category: ${t.category} | verdict: ${t.verdict} | ${new Date(t.timestamp).toLocaleDateString()}`
+          )
+          .join("\n")
+      : "No transactions recorded yet.";
+
+  const vaultContext = vault?.configured
+    ? `Vault: limit ${vault.limitStx} STX/window, spent ${vault.spentStx.toFixed(4)} STX, remaining ${vault.remainingStx.toFixed(4)} STX, ${vault.active ? "active" : "paused"}.`
+    : "Vault: not configured.";
+
+  return callGroq(
+    `You are TwinPay AI reviewing a user's recent activity to produce a short proactive digest (like a financial co-pilot checking in, not a transaction approval).
+User profile: monthly budget $${profile.monthly_budget}, personality: ${profile.personality}, current balance: ${profile.current_balance.toFixed(4)} STX.
+${vaultContext}
+Recent transactions:
+${txContext}
+
+Write a concise, encouraging but honest digest. Mention concrete numbers where possible. If there isn't much history, focus on onboarding-style encouragement (e.g. suggest configuring the vault, or making a first payment) rather than inventing patterns that aren't there.
+Return ONLY JSON:
+{
+  "headline": string (max 8 words, e.g. "You're 12% under budget this window"),
+  "summary": string (1-2 sentences),
+  "highlights": [{ "label": string, "detail": string, "tone": "positive"|"warning"|"neutral" }] (2-4 items),
+  "recommendation": string (one concrete next action),
+  "trend": "up"|"down"|"flat"
+}`
+  );
+}
+
+export interface VaultLimitSuggestion {
+  suggested_limit_stx: number;
+  reasoning: string;
+}
+
+/**
+ * Suggests a sensible vault spending limit based on the user's stated budget,
+ * personality and current balance — used to make vault setup feel like
+ * guided advice rather than a blank numeric field.
+ */
+export async function suggestVaultLimit(profile: {
+  monthly_budget: number;
+  personality: string;
+  current_balance: number;
+}): Promise<VaultLimitSuggestion> {
+  return callGroq(
+    `A user wants TwinPay AI to suggest a monthly on-chain spending limit (in STX) for their TwinPay Vault smart contract.
+Profile: monthly budget $${profile.monthly_budget}, personality: ${profile.personality}, current balance: ${profile.current_balance.toFixed(4)} STX.
+The limit should be realistic relative to their current balance (never suggest more than ~80% of current balance) and aligned with their personality (conservative = lower % of balance, aggressive = higher %).
+Return ONLY JSON:
+{ "suggested_limit_stx": number, "reasoning": string (1 sentence) }`
+  );
+}
+
 async function callGroq(prompt: string): Promise<any> {
   if (!GROQ_API_KEY) {
     throw new Error("VITE_GROQ_API_KEY not found. Set it in Vercel environment variables.");

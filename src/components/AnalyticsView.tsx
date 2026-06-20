@@ -98,7 +98,7 @@ export default function AnalyticsView({ history }: AnalyticsViewProps) {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold tracking-tight uppercase mb-1">Spending Analytics</h2>
+        <h2 className="font-display text-2xl sm:text-3xl text-white mb-1">Spending Analytics</h2>
         <p className="text-[10px] text-muted font-mono uppercase tracking-widest">
           This Month // On-Chain Intelligence
         </p>
@@ -133,7 +133,7 @@ export default function AnalyticsView({ history }: AnalyticsViewProps) {
             ) : (
               (["STX", "sBTC", "aeUSDC", "USDCx"] as TransactionToken[]).map((tok) => {
                 const val = tokenTotals[tok] ?? 0;
-                const maxVal = Math.max(...Object.values(tokenTotals), 1);
+                const maxVal = Math.max(...(Object.values(tokenTotals) as number[]), 1);
                 return (
                   <div key={tok}>
                     <div className="flex justify-between text-[11px] mb-1">

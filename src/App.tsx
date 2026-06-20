@@ -25,6 +25,7 @@ import {
   Link,
   BarChart2,
   Shield,
+  MoreHorizontal,
 } from "lucide-react";
 import { showConnect, openSTXTransfer, openContractCall } from "@stacks/connect";
 import {
@@ -73,6 +74,13 @@ import ContactsView from "./components/ContactsView";
 import RequestView from "./components/RequestView";
 import AnalyticsView from "./components/AnalyticsView";
 import VaultView from "./components/VaultView";
+import MoreView from "./components/MoreView";
+import InsightDigest from "./components/InsightDigest";
+import YieldView from "./components/YieldView";
+import RecurringView from "./components/RecurringView";
+import ReputationView from "./components/ReputationView";
+import MultisigView from "./components/MultisigView";
+import CreditLineView from "./components/CreditLineView";
 import {
   makeDecision,
   compareSpending,
@@ -86,6 +94,7 @@ import {
   TransactionRecord,
   ViewType,
   Contact,
+  RecurringPayment,
 } from "./types";
 import AboutModal from "./components/AboutModal";
 import LandingPage from "./components/LandingPage";
@@ -134,6 +143,9 @@ function AppContent() {
 
   // ── Vault state ────────────────────────────────────────────────────────
   const [vaultInfo, setVaultInfo] = useState<VaultInfo | null>(null);
+
+  // ── Recurring payments: due-count for nav badges ───────────────────────
+  const [recurringDueCount, setRecurringDueCount] = useState(0);
 
   const [analysisStatus, setAnalysisStatus] = useState<{
     type: "success" | "error" | "info";
@@ -257,6 +269,23 @@ function AppContent() {
     );
   }, [address]);
 
+  // Listen to recurring payments — used only to compute a "due" badge count for nav
+  useEffect(() => {
+    if (!address) {
+      setRecurringDueCount(0);
+      return;
+    }
+    const q = query(collection(db, `users/${address}/recurring`), orderBy("nextRunAt", "asc"));
+    return onSnapshot(q, (snap) => {
+      const now = Date.now();
+      const due = snap.docs.filter((d) => {
+        const data = d.data() as RecurringPayment;
+        return data.active && new Date(data.nextRunAt).getTime() <= now;
+      }).length;
+      setRecurringDueCount(due);
+    });
+  }, [address]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -366,6 +395,19 @@ function AppContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /** Bridges a due RecurringPayment into the normal propose/audit/approve flow. */
+  const handleRunRecurringNow = (payment: RecurringPayment) => {
+    addLog(`[RECURRING] Running "${payment.label}" (${payment.amount} ${payment.token})…`);
+    setActiveView("engine");
+    handleProposeTx({
+      item: payment.label,
+      price: payment.amount,
+      category: "Recurring",
+      token: payment.token,
+      recipient: payment.recipient,
+    });
   };
 
   const runSystemAudit = async () => {
@@ -616,13 +658,47 @@ function AppContent() {
           <VaultView
             address={address}
             onLog={addLog}
+            profile={profile}
           />
         );
+      case "more":
+        return (
+          <MoreView
+            onNavigate={setActiveView}
+            insightBadge={true}
+            recurringDueCount={recurringDueCount}
+          />
+        );
+      case "insights":
+        return (
+          <InsightDigest
+            profile={profile}
+            history={history}
+            vault={vaultInfo}
+            address={address}
+          />
+        );
+      case "yield":
+        return <YieldView address={address} profile={profile} />;
+      case "recurring":
+        return (
+          <RecurringView
+            address={address}
+            contacts={contacts}
+            onRunNow={handleRunRecurringNow}
+          />
+        );
+      case "reputation":
+        return <ReputationView address={address} history={history} />;
+      case "multisig":
+        return <MultisigView />;
+      case "credit":
+        return <CreditLineView />;
       default:
         return (
           <div className="space-y-8">
             {/* Premium engine heading with animated background */}
-            <div className="relative overflow-hidden rounded-2xl p-8 border border-brand-green/20"
+            <div className="relative overflow-hidden rounded-2xl p-8 border border-brand-green/20 ledger-strip"
               style={{
                 background: "linear-gradient(135deg, rgba(17,20,28,0.95) 0%, rgba(11,14,20,0.98) 100%)",
                 backdropFilter: "blur(20px)",
@@ -645,7 +721,7 @@ function AppContent() {
                     <span className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
                     <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-green/70">Decision Engine Active</span>
                   </div>
-                  <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white leading-none">
+                  <h2 className="font-display text-3xl sm:text-4xl text-white leading-none">
                     Propose
                     <span className="block text-gradient-brand">Transaction</span>
                   </h2>
@@ -724,6 +800,7 @@ function AppContent() {
                 </AnimatePresence>
               </div>
               <aside className="lg:col-span-4 space-y-6">
+                <InsightDigest profile={profile} history={history} vault={vaultInfo} address={address} variant="compact" />
                 <WalletCard
                   profile={profile}
                   address={address || "SP0000..."}
@@ -820,20 +897,44 @@ function AppContent() {
           <button onClick={() => setActiveView("history")} className={navItemClass("history")}>
             <Activity className="w-4 h-4" /> History & Logs
           </button>
+          <button onClick={() => setActiveView("vault")} className={navItemClass("vault")}>
+            <Shield className="w-4 h-4" /> TwinPay Vault
+            {vaultInfo?.active && (
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
+            )}
+          </button>
           <button onClick={() => setActiveView("contacts")} className={navItemClass("contacts")}>
             <Users className="w-4 h-4" /> Address Book
           </button>
           <button onClick={() => setActiveView("request")} className={navItemClass("request")}>
             <Link className="w-4 h-4" /> Payment Request
           </button>
+
+          <div className="text-[10px] uppercase text-muted font-bold tracking-widest mb-4 mt-7 flex items-center gap-2">
+            <MoreHorizontal className="w-3 h-3 text-brass" /> Growth Tools
+          </div>
+          <button
+            onClick={() => setActiveView("more")}
+            className={navItemClass("more")}
+          >
+            <MoreHorizontal className="w-4 h-4" /> More
+            {recurringDueCount > 0 && (
+              <span className="ml-auto px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-brass/20 text-brass">
+                {recurringDueCount}
+              </span>
+            )}
+          </button>
+          <button onClick={() => setActiveView("insights")} className={navItemClass("insights")}>
+            <Sparkles className="w-4 h-4" /> AI Insight Digest
+          </button>
+          <button onClick={() => setActiveView("yield")} className={navItemClass("yield")}>
+            <Wallet className="w-4 h-4" /> BTC Yield
+          </button>
+          <button onClick={() => setActiveView("recurring")} className={navItemClass("recurring")}>
+            <Clock className="w-4 h-4" /> Recurring Payments
+          </button>
           <button onClick={() => setActiveView("analytics")} className={navItemClass("analytics")}>
             <BarChart2 className="w-4 h-4" /> Analytics
-          </button>
-          <button onClick={() => setActiveView("vault")} className={navItemClass("vault")}>
-            <Shield className="w-4 h-4" /> TwinPay Vault
-            {vaultInfo?.active && (
-              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />
-            )}
           </button>
 
           <div className="pt-8 mt-4 border-t border-line">
@@ -922,18 +1023,37 @@ function AppContent() {
               <button onClick={() => { setActiveView("history"); setMobileMenuOpen(false); }} className={mobileNavClass("history")}>
                 <Activity className="w-5 h-5" /> History & Logs
               </button>
+              <button onClick={() => { setActiveView("vault"); setMobileMenuOpen(false); }} className={mobileNavClass("vault")}>
+                <Shield className="w-5 h-5" /> TwinPay Vault
+                {vaultInfo?.active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />}
+              </button>
               <button onClick={() => { setActiveView("contacts"); setMobileMenuOpen(false); }} className={mobileNavClass("contacts")}>
                 <Users className="w-5 h-5" /> Address Book
               </button>
               <button onClick={() => { setActiveView("request"); setMobileMenuOpen(false); }} className={mobileNavClass("request")}>
                 <Link className="w-5 h-5" /> Payment Request
               </button>
+
+              <div className="text-[10px] uppercase text-muted font-bold tracking-widest mt-5 mb-2 flex items-center gap-2">
+                <MoreHorizontal className="w-3 h-3 text-brass" /> Growth Tools
+              </div>
+              <button onClick={() => { setActiveView("more"); setMobileMenuOpen(false); }} className={mobileNavClass("more")}>
+                <MoreHorizontal className="w-5 h-5" /> More
+                {recurringDueCount > 0 && (
+                  <span className="ml-auto px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-brass/20 text-brass">{recurringDueCount}</span>
+                )}
+              </button>
+              <button onClick={() => { setActiveView("insights"); setMobileMenuOpen(false); }} className={mobileNavClass("insights")}>
+                <Sparkles className="w-5 h-5" /> AI Insight Digest
+              </button>
+              <button onClick={() => { setActiveView("yield"); setMobileMenuOpen(false); }} className={mobileNavClass("yield")}>
+                <Wallet className="w-5 h-5" /> BTC Yield
+              </button>
+              <button onClick={() => { setActiveView("recurring"); setMobileMenuOpen(false); }} className={mobileNavClass("recurring")}>
+                <Clock className="w-5 h-5" /> Recurring Payments
+              </button>
               <button onClick={() => { setActiveView("analytics"); setMobileMenuOpen(false); }} className={mobileNavClass("analytics")}>
                 <BarChart2 className="w-5 h-5" /> Analytics
-              </button>
-              <button onClick={() => { setActiveView("vault"); setMobileMenuOpen(false); }} className={mobileNavClass("vault")}>
-                <Shield className="w-5 h-5" /> TwinPay Vault
-                {vaultInfo?.active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-green animate-pulse" />}
               </button>
               <button onClick={() => { setIsSettingsOpen(true); setMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-ghost">
                 <Settings className="w-5 h-5" /> Settings
@@ -1042,8 +1162,19 @@ function AppContent() {
           <button onClick={() => setActiveView("contacts")} className={`flex flex-col items-center ${activeView === "contacts" ? "text-brand-green" : "text-muted"}`}>
             <Users className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Contacts</span>
           </button>
-          <button onClick={() => setActiveView("analytics")} className={`flex flex-col items-center ${activeView === "analytics" ? "text-brand-green" : "text-muted"}`}>
-            <BarChart2 className="w-5 h-5" /><span className="text-[9px] font-bold uppercase">Analytics</span>
+          <button
+            onClick={() => setActiveView("more")}
+            className={`flex flex-col items-center relative ${
+              ["more", "insights", "yield", "recurring", "analytics", "reputation", "multisig", "credit"].includes(activeView)
+                ? "text-brand-green"
+                : "text-muted"
+            }`}
+          >
+            <MoreHorizontal className="w-5 h-5" />
+            {recurringDueCount > 0 && (
+              <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-brass animate-pulse" />
+            )}
+            <span className="text-[9px] font-bold uppercase">More</span>
           </button>
         </nav>
       </main>

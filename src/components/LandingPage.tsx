@@ -17,6 +17,12 @@ import {
   Lock,
   Globe,
   Cpu,
+  Sparkles,
+  Bitcoin,
+  Repeat,
+  Award,
+  HelpCircle,
+  Plus,
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -67,8 +73,74 @@ const STATS = [
   { label: "Network", value: "Mainnet" },
 ];
 
+const GROWTH_FEATURES = [
+  {
+    icon: Sparkles,
+    accent: "brass",
+    title: "AI Insight Digest",
+    desc: "Your co-pilot checks in proactively — spending trends, vault status, and one concrete next step, without you having to ask.",
+  },
+  {
+    icon: Bitcoin,
+    accent: "brass",
+    title: "BTC Yield",
+    desc: "See live Stacking network parameters and pooled or liquid stacking options for the STX you're not actively spending.",
+  },
+  {
+    icon: Repeat,
+    accent: "orange",
+    title: "Recurring Payments",
+    desc: "Schedule rent, subscriptions, or allowances once. TwinPay AI surfaces it when due and routes it through the same audit flow.",
+  },
+  {
+    icon: Award,
+    accent: "ok",
+    title: "Trust Score",
+    desc: "A running record of your approved, efficient payments — the foundation for an on-chain reputation system.",
+  },
+  {
+    icon: ShieldCheck,
+    accent: "orange",
+    title: "TwinPay Vault",
+    desc: "A live Clarity smart contract enforcing your own spending limit on-chain — not just a UI promise.",
+  },
+  {
+    icon: Bot,
+    accent: "brass",
+    title: "Multisig & Credit Line",
+    desc: "Shared vaults with threshold approval, and sBTC-collateralized credit — on the roadmap, built on the same contract foundation.",
+  },
+];
+
+const FAQS = [
+  {
+    q: "Is TwinPay AI custodial?",
+    a: "No. TwinPay never holds your funds. Every transfer is signed by you in your own wallet (Leather or Xverse) and settles directly on Stacks Mainnet. The AI only proposes and audits — it cannot move funds without your signature.",
+  },
+  {
+    q: "What does the TwinPay Vault contract actually enforce?",
+    a: "The Vault is a deployed Clarity smart contract that lets you set a per-window STX spending limit on-chain. Once active, execute-transfer calls are checked against your remaining allowance by the contract itself, not just by the app's UI.",
+  },
+  {
+    q: "How does the AI make decisions?",
+    a: "TwinPay sends your budget, personality setting, balance, and recent transaction history to an LLM (via Groq), which returns an approve/modify/reject decision with a confidence score and a written reason. You always see the reasoning before signing.",
+  },
+  {
+    q: "What happens if the AI rejects a payment?",
+    a: "Nothing is broadcast. A rejected or modified decision simply shows you the AI's reasoning — you can adjust the amount, change the recipient, or override and proceed at your own discretion.",
+  },
+  {
+    q: "Which assets are supported?",
+    a: "STX natively, plus SIP-010 tokens including sBTC, aeUSDC, and USDCx. The Vault contract currently enforces limits on native STX transfers.",
+  },
+  {
+    q: "Is this open source?",
+    a: "Yes — the frontend and the Vault contract source are both available on GitLab, linked in the footer.",
+  },
+];
+
 /* ── Animated floating card ── */
-function FloatingCard({ tx, delay, x, y }: { tx: typeof MOCK_TXS[0]; delay: number; x: number; y: number }) {
+function FloatingCard({ tx, delay, x, y }: { tx: typeof MOCK_TXS[0]; delay: number; x: number; y: number; key?: string | number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -497,6 +569,62 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
       </section>
 
       {/* ══════════════════════════════════════
+          BEYOND PAYMENTS (growth features)
+      ══════════════════════════════════════ */}
+      <section className="relative z-10 px-6 sm:px-10 py-24 sm:py-32 max-w-6xl mx-auto border-t border-white/5">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brass/10 border border-brass/25 rounded-full mb-5">
+            <Sparkles className="w-3 h-3 text-brass" />
+            <span className="text-[9px] font-bold uppercase tracking-widest text-brass">
+              Beyond a single payment
+            </span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-5xl leading-tight tracking-tight mb-4 text-white">
+            One payment is a start.
+            <br />
+            <span className="text-gradient-brass">A financial co-pilot is the point.</span>
+          </h2>
+          <p className="text-sm text-[#6E7686] max-w-lg mx-auto leading-relaxed">
+            TwinPay grows with you — from a single AI-audited transfer to ongoing insight, yield, automation, and a verifiable track record.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {GROWTH_FEATURES.map(({ icon: Icon, accent, title, desc }, i) => {
+            const colorMap: Record<string, { text: string; bg: string; border: string }> = {
+              brass: { text: "text-brass", bg: "bg-brass/10", border: "border-brass/25" },
+              orange: { text: "text-[#FF7A18]", bg: "bg-[#FF7A18]/10", border: "border-[#FF7A18]/25" },
+              ok: { text: "text-ok", bg: "bg-ok/10", border: "border-ok/25" },
+            };
+            const c = colorMap[accent];
+            return (
+              <motion.div
+                key={title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08, duration: 0.5 }}
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                className="panel-quiet ledger-strip rounded-2xl p-6 text-left"
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${c.bg} border ${c.border}`}>
+                  <Icon className={`w-5 h-5 ${c.text}`} />
+                </div>
+                <h3 className="text-sm font-bold text-white mb-2">{title}</h3>
+                <p className="text-[11px] text-[#6E7686] leading-relaxed">{desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
           CTA BANNER
       ══════════════════════════════════════ */}
       <section className="relative z-10 px-6 sm:px-10 py-20 sm:py-28">
@@ -534,6 +662,11 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
           </div>
         </motion.div>
       </section>
+
+      {/* ══════════════════════════════════════
+          FAQ
+      ══════════════════════════════════════ */}
+      <FaqSection />
 
       {/* ══════════════════════════════════════
           FOOTER
@@ -584,5 +717,71 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
       </footer>
 
     </div>
+  );
+}
+
+/* ── FAQ accordion ── */
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  return (
+    <section className="relative z-10 px-6 sm:px-10 py-20 sm:py-28 border-t border-white/5">
+      <div className="max-w-3xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-14"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full mb-5">
+            <HelpCircle className="w-3 h-3 text-[#FF7A18]" />
+            <span className="text-[9px] font-bold uppercase tracking-widest text-[#9CA3AF]">
+              Frequently Asked
+            </span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-4xl text-white">Questions, answered</h2>
+        </motion.div>
+
+        <div className="space-y-3">
+          {FAQS.map((item, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <motion.div
+                key={item.q}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="border border-white/8 rounded-xl bg-[#0B0E14]/60 overflow-hidden"
+              >
+                <button
+                  onClick={() => setOpenIndex(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+                >
+                  <span className="text-sm font-bold text-white">{item.q}</span>
+                  <Plus
+                    className={`w-4 h-4 text-[#FF7A18] shrink-0 transition-transform duration-300 ${isOpen ? "rotate-45" : ""}`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-5 pb-5 text-[12px] text-[#9CA3AF] leading-relaxed">{item.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
