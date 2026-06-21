@@ -98,7 +98,6 @@ import {
 } from "./types";
 import AboutModal from "./components/AboutModal";
 import LandingPage from "./components/LandingPage";
-import StacksDonation from "./components/StacksDonation";
 import OnboardingModal from "./components/OnboardingModal";
 
 function getStacksAddress(): string | null {
@@ -1058,10 +1057,6 @@ function AppContent() {
               <button onClick={() => { setIsSettingsOpen(true); setMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-ghost">
                 <Settings className="w-5 h-5" /> Settings
               </button>
-
-              <div className="mt-4 pt-4 border-t border-line">
-                <StacksDonation isConnected={isConnected} />
-              </div>
 
               <div className="mt-auto pt-6 border-t border-line">
                 <button onClick={() => { setIsAboutOpen(true); setMobileMenuOpen(false); }} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-ghost"><Info className="w-5 h-5" /> About</button>

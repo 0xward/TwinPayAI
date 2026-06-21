@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, User, CheckCircle, XCircle, Loader, Zap } from "lucide-react";
 import { TransactionInput, TransactionToken, Contact } from "../types";
 import { resolveBnsName } from "../stacks-config";
+import { TokenIcon } from "./icons/AssetIcons";
 
 interface TransactionFormProps {
   onSubmit: (tx: TransactionInput) => void;
@@ -219,7 +220,7 @@ export default function TransactionForm({
                   key={t}
                   type="button"
                   onClick={() => setToken(t)}
-                  className="flex-1 min-w-0 px-2 py-3 rounded-xl text-[10px] font-bold font-mono transition-all duration-200 cursor-pointer"
+                  className="flex-1 min-w-0 px-2 py-3 rounded-xl text-[10px] font-bold font-mono transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
                   style={
                     token === t
                       ? {
@@ -235,6 +236,7 @@ export default function TransactionForm({
                         }
                   }
                 >
+                  <TokenIcon token={t} className="w-3.5 h-3.5 shrink-0" />
                   {t}
                 </button>
               ))}

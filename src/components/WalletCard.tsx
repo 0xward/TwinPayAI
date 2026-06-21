@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { UserProfile, StackingInfo, VaultStatus } from "../types";
 import { explorerAddressUrl, fetchStackingInfo, VAULT_CONTRACT } from "../stacks-config";
 import { Lock, Unlock, Shield, ShieldCheck, ShieldOff } from "lucide-react";
+import { TokenIcon } from "./icons/AssetIcons";
 
 interface WalletCardProps {
   profile: UserProfile;
@@ -62,9 +63,12 @@ export default function WalletCard({ profile, address, stxPrice, tokenBalances, 
 
       <div className="space-y-4">
         <div className="flex justify-between items-center group">
-          <div className="flex flex-col">
-            <span className="text-sm text-ghost group-hover:text-white transition-colors">STX (Native)</span>
-            <span className="text-[9px] text-muted font-mono">${stxPrice.toFixed(4)} / STX</span>
+          <div className="flex items-center gap-2">
+            <TokenIcon token="STX" className="w-5 h-5" />
+            <div className="flex flex-col">
+              <span className="text-sm text-ghost group-hover:text-white transition-colors">STX (Native)</span>
+              <span className="text-[9px] text-muted font-mono">${stxPrice.toFixed(4)} / STX</span>
+            </div>
           </div>
           <div className="text-right">
             <div className="text-sm font-bold tracking-tight font-mono text-brand-gold">
@@ -77,7 +81,10 @@ export default function WalletCard({ profile, address, stxPrice, tokenBalances, 
         </div>
 
         <div className="flex justify-between items-center group">
-          <span className="text-sm text-ghost group-hover:text-white transition-colors">sBTC (Stacks)</span>
+          <div className="flex items-center gap-2">
+            <TokenIcon token="sBTC" className="w-5 h-5" />
+            <span className="text-sm text-ghost group-hover:text-white transition-colors">sBTC (Stacks)</span>
+          </div>
           <span className="text-sm font-bold tracking-tight font-mono">
             {sBtcBalance.toLocaleString(undefined, { minimumFractionDigits: 8 })}
           </span>
@@ -85,7 +92,10 @@ export default function WalletCard({ profile, address, stxPrice, tokenBalances, 
 
         {aeUsdcBalance > 0 && (
           <div className="flex justify-between items-center group">
-            <span className="text-sm text-ghost group-hover:text-white transition-colors">aeUSDC</span>
+            <div className="flex items-center gap-2">
+              <TokenIcon token="aeUSDC" className="w-5 h-5" />
+              <span className="text-sm text-ghost group-hover:text-white transition-colors">aeUSDC</span>
+            </div>
             <span className="text-sm font-bold tracking-tight font-mono">
               {aeUsdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { fetchPoxInfo, fetchStackingInfo, type PoxInfo } from '../stacks-config';
 import { UserProfile, StackingInfo } from '../types';
+import { ProtocolIcon } from './icons/AssetIcons';
 
 interface YieldViewProps {
   address: string | null;
@@ -31,18 +32,21 @@ interface YieldViewProps {
 const POOL_PROVIDERS = [
   {
     name: 'Xverse Pool',
+    icon: 'xverse' as const,
     minStx: 500,
     description: 'Wallet-native delegated stacking. STX never leaves your wallet.',
     url: 'https://www.xverse.app/',
   },
   {
     name: 'StackingDAO',
+    icon: 'stackingdao' as const,
     minStx: 0,
     description: 'Liquid stacking — receive stSTX while your STX stays locked, auto-compounding.',
     url: 'https://www.stackingdao.com/',
   },
   {
     name: 'Leather Earn',
+    icon: 'leather' as const,
     minStx: 0,
     description: 'In-wallet guided stacking flow with signer key handling built in.',
     url: 'https://leather.io/earn',
@@ -216,7 +220,10 @@ export default function YieldView({ address, profile }: YieldViewProps) {
                   className="block p-4 rounded-xl bg-ink/60 border border-line hover:border-brass/40 transition-all group"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-bold text-white">{p.name}</span>
+                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                      <ProtocolIcon protocol={p.icon} className="w-5 h-5" />
+                      {p.name}
+                    </span>
                     <ArrowUpRight className="w-3.5 h-3.5 text-muted group-hover:text-brass transition-colors" />
                   </div>
                   <p className="text-[11px] text-ghost leading-relaxed mb-2">{p.description}</p>

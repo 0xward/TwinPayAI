@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { TokenIcon, ProtocolIcon } from './icons/AssetIcons';
 
 interface CreditLineViewProps {
   address: string | null;
@@ -58,7 +59,7 @@ export default function CreditLineView({ address, tokenBalances }: CreditLineVie
           style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)' }} />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-3">
-            <Landmark className="w-3.5 h-3.5 text-brass" />
+            <ProtocolIcon protocol="zest" className="w-4 h-4" />
             <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brass">
               Powered by Zest Protocol
             </span>
@@ -79,7 +80,7 @@ export default function CreditLineView({ address, tokenBalances }: CreditLineVie
         <div className="lg:col-span-7 space-y-4">
           <div className="panel-glass rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
-              <ShieldCheck className="w-4 h-4 text-brand-orange" />
+              <TokenIcon token="sBTC" className="w-4 h-4" />
               <span className="text-sm font-bold uppercase tracking-wide">Your sBTC</span>
             </div>
             {!address ? (
