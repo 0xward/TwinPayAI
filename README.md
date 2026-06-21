@@ -204,9 +204,10 @@ The vault lets a user configure a per-window STX spending limit that is enforced
 - [x] BTC Yield panel (live PoX data + stacking provider links)
 - [x] Recurring Payments
 - [x] Trust Score (off-chain v1, computed from transaction history)
-- [ ] **Multisig Vault** — shared vaults with N-of-M threshold approval, extending the current Vault contract
+- [x] **Multisig Vault** — shared vaults with N-of-M threshold approval, extending the current Vault contract
+- [x] On-chain Trust Score — mirror reputation milestones via contract events instead of client-side computation only
 - [ ] **sBTC Credit Line** — borrow STX against sBTC collateral without selling it, with on-chain price oracle and liquidation logic
-- [ ] On-chain Trust Score — mirror reputation milestones via contract events instead of client-side computation only
+
 
 ## License
 
