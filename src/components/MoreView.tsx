@@ -77,18 +77,16 @@ export default function MoreView({ onNavigate, insightBadge, recurringDueCount }
     {
       view: 'multisig',
       title: 'Multisig Vault',
-      description: 'Shared vaults with threshold approval for teams or family.',
+      description: 'Shared vaults with threshold approval for teams or family. Live on Mainnet.',
       icon: <Users2 className="w-5 h-5" />,
-      accent: 'muted',
-      comingSoon: true,
+      accent: 'orange',
     },
     {
       view: 'credit',
       title: 'sBTC Credit Line',
-      description: 'Borrow STX against sBTC collateral without selling your BTC.',
+      description: 'Borrow stablecoins against sBTC via Zest Protocol, without selling your BTC.',
       icon: <Landmark className="w-5 h-5" />,
-      accent: 'muted',
-      comingSoon: true,
+      accent: 'brass',
     },
   ];
 

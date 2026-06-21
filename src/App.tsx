@@ -691,9 +691,9 @@ function AppContent() {
       case "reputation":
         return <ReputationView address={address} history={history} />;
       case "multisig":
-        return <MultisigView />;
+        return <MultisigView address={address} />;
       case "credit":
-        return <CreditLineView />;
+        return <CreditLineView address={address} profile={profile} tokenBalances={tokenBalances} />;
       default:
         return (
           <div className="space-y-8">

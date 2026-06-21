@@ -21,6 +21,10 @@ import { HIRO_API_BASE } from '../stacks-config';
 // ─── Contract Constants ────────────────────────────────────────────────────
 export const VAULT_CONTRACT_ADDRESS = 'SPQ189E66S20X7ATY7794HBY6743JE9YJMCKHAEF';
 export const VAULT_CONTRACT_NAME = 'twinpay-vault';
+
+// TwinPay Multisig Vault — deployed to Mainnet, tx 0x04336476f14c071ba78e0baad508c4f08b4b443cd73950604c77bc1c9b856bc7
+export const MULTISIG_CONTRACT_ADDRESS = 'SPQ189E66S20X7ATY7794HBY6743JE9YJMCKHAEF';
+export const MULTISIG_CONTRACT_NAME = 'twinpay-multisig';
 /** 4320 burn-blocks ≈ 30 days at ~10 min/block */
 export const VAULT_WINDOW_BLOCKS = 4320;
 
