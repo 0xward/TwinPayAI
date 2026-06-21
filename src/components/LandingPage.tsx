@@ -135,7 +135,7 @@ const FAQS = [
   },
   {
     q: "Is this open source?",
-    a: "Yes — the frontend and the Vault contract source are both available on GitLab, linked in the footer.",
+    a: "Yes — the frontend and the Vault contract source are both available on GitHub, linked in the footer.",
   },
 ];
 
@@ -264,16 +264,8 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
             onClick={onAbout}
             className="hidden sm:flex items-center gap-1.5 text-[#6E7686] hover:text-white text-xs font-medium transition-colors"
           >
-            <Info className="w-3.5 h-3.5" /> About
+            <Info className="w-3.5 h-3.5" /> Learn More
           </button>
-          <a
-            href="https://gitlab.com/fafaonchain-group/TwinPay-AI"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden sm:flex items-center gap-1.5 text-[#6E7686] hover:text-white text-xs font-medium transition-colors"
-          >
-            <Github className="w-3.5 h-3.5" /> GitLab
-          </a>
           <button
             onClick={onEnterApp}
             className="flex items-center gap-2 px-4 h-9 bg-gradient-to-r from-[#FFB066] via-[#FF7A18] to-[#C2410C] text-[#07090D] rounded-lg text-[10px] font-black uppercase tracking-wider shadow-[0_0_14px_rgba(255,122,24,0.3)] hover:shadow-[0_0_22px_rgba(255,122,24,0.5)] hover:scale-105 transition-all active:scale-95"
@@ -344,7 +336,7 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
           <a
-            href="https://gitlab.com/fafaonchain-group/TwinPay-AI"
+            href="https://github.com/0xward/TwinPayAI"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-2 px-6 py-4 bg-white/5 border border-white/10 text-white font-bold uppercase text-xs tracking-widest rounded-xl hover:bg-white/10 transition-all"
@@ -693,12 +685,12 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
               <Info className="w-3 h-3" /> About
             </button>
             <a
-              href="https://gitlab.com/fafaonchain-group/TwinPay-AI"
+              href="https://github.com/0xward/TwinPayAI"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6E7686] hover:text-[#FF7A18] transition-colors"
             >
-              <Github className="w-3 h-3" /> GitLab
+              <Github className="w-3 h-3" /> GitHub
             </a>
             <a
               href="https://www.stacks.co"
