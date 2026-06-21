@@ -3,25 +3,53 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ─────────────────────────────────────────────────────────────
-    // DEV MODE — open read/write while Firebase Auth is removed.
-    // Wallet address (SP...) is used as the document path key.
-    // TODO: Replace with Stacks signature verification middleware
-    //       once the backend can validate signed Stacks messages.
+    // NOTE: There is no Firebase Auth in this app — the wallet address
+    // (SP...) is used as the document path key, but Firestore Rules
+    // cannot verify that a given client actually controls that wallet
+    // without a signed-message verification step (not implemented yet).
+    // Until that exists, these rules cannot fully prevent one address's
+    // data from being read/written by someone who simply knows the
+    // address (addresses are public on-chain anyway for transactions,
+    // but profile/contacts/recurring schedules are more sensitive).
+    //
+    // What IS enforced below as defense-in-depth:
+    //   - Only the specific known subcollections are reachable at all;
+    //     every other path is denied by default.
+    //   - Writes must roughly match the expected document shape, which
+    //     blocks arbitrary/garbage writes even without auth.
+    //
+    // TODO: Replace with Stacks signature verification middleware once
+    //       the backend can validate signed Stacks messages, then tighten
+    //       these rules to check the verified signer against {walletAddress}.
     // ─────────────────────────────────────────────────────────────
 
-    // User profile document: /users/{walletAddress}
     match /users/{walletAddress} {
       allow read, write: if true;
 
-      // Transactions subcollection: /users/{walletAddress}/transactions/{txId}
       match /transactions/{txId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow create, update: if request.resource.data.keys().hasAll(['id', 'item', 'amount', 'token', 'recipient', 'decision', 'verdict', 'timestamp']);
+        allow delete: if true;
       }
 
-      // Contacts subcollection: /users/{walletAddress}/contacts/{contactId}
       match /contacts/{contactId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow create, update: if request.resource.data.keys().hasAll(['name', 'address']);
+        allow delete: if true;
       }
+
+      match /recurring/{recurringId} {
+        allow read: if true;
+        allow create, update: if request.resource.data.keys().hasAll(['label', 'amount', 'token', 'recipient', 'intervalDays', 'nextRunAt', 'active']);
+        allow delete: if true;
+      }
+    }
+
+    // Explicit default-deny for anything not matched above. Firestore
+    // already denies unmatched paths by default, but this makes the
+    // intent unambiguous for future readers of this file.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

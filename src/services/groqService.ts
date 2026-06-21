@@ -45,7 +45,7 @@ Transaction: buy "${tx.item}" for $${tx.price} using ${tx.token}, recipient: ${t
 Using the transaction history above (if provided), detect any spending anomalies or patterns and factor them into your decision. Give personalized advice.
 
 Decide: approve, modify, or reject.
-- If user balance >= price + fee (~0.0005 STX), approve.
+- If user balance >= price + fee (~0.01 STX), approve.
 - If balance insufficient but close, suggest a modified lower amount.
 - Reject only if far over budget or highly suspicious.
 Security audit: validate recipient address format. New addresses are acceptable.

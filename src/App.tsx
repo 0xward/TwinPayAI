@@ -51,7 +51,7 @@ import {
   getDocs,
   limit,
 } from "firebase/firestore";
-import { db } from "./lib/firebase";
+import { db, firebaseInitError } from "./lib/firebase";
 import {
   userSession,
   network,
@@ -838,6 +838,29 @@ function AppContent() {
         );
     }
   };
+
+  // Surface a clear, visible error instead of a blank screen if Firebase
+  // failed to initialize (e.g. missing VITE_FIREBASE_CONFIG in this
+  // deployment's environment variables). This intentionally renders after
+  // all hooks above have already run, so it doesn't violate React's
+  // rules-of-hooks despite being an early return.
+  if (firebaseInitError) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-ink text-[#F4F4F7] p-6">
+        <div className="max-w-md text-center space-y-4 panel-glass rounded-2xl p-8 border border-red-500/30">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
+            <span className="text-red-400 text-xl font-bold">!</span>
+          </div>
+          <h2 className="text-lg font-bold text-white">Configuration Error</h2>
+          <p className="text-sm text-ghost leading-relaxed">{firebaseInitError}</p>
+          <p className="text-[11px] text-muted">
+            This usually means an environment variable is missing in this deployment. Check the project's
+            environment variable settings (e.g. in Vercel) and ensure <code className="text-brand-orange">VITE_FIREBASE_CONFIG</code> is set.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-ink text-[#F4F4F7] relative">

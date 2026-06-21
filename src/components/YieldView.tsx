@@ -35,21 +35,21 @@ const POOL_PROVIDERS = [
     icon: 'xverse' as const,
     minStx: 500,
     description: 'Wallet-native delegated stacking. STX never leaves your wallet.',
-    url: 'https://www.xverse.app/',
+    url: 'https://wallet.xverse.app/earn/stacking',
   },
   {
     name: 'StackingDAO',
     icon: 'stackingdao' as const,
     minStx: 0,
     description: 'Liquid stacking — receive stSTX while your STX stays locked, auto-compounding.',
-    url: 'https://www.stackingdao.com/',
+    url: 'https://app.stackingdao.com/',
   },
   {
-    name: 'Leather Earn',
+    name: 'Leather Wallet',
     icon: 'leather' as const,
     minStx: 0,
-    description: 'In-wallet guided stacking flow with signer key handling built in.',
-    url: 'https://leather.io/earn',
+    description: 'Open the Stacking section inside the Leather extension itself — pooled or liquid stacking, no separate site needed.',
+    url: 'https://leather.io/',
   },
 ];
 
