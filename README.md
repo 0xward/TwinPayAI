@@ -134,8 +134,8 @@ TwinPayAI-main/
 ### Installation
 
 ```bash
-git clone https://github.com/arawrdn/TwinPay-AI.git
-cd TwinPay-AI
+git clone https://github.com/0xwars/TwinPayAI.git
+cd TwinPayAI
 npm install
 ```
 
