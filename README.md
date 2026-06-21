@@ -15,7 +15,8 @@ Beyond a single payment, TwinPay is built to grow with you: an on-chain spending
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
-- [Smart Contract — TwinPay Vault](#smart-contract--twinpay-vault)
+- [Smart Contracts](#smart-contracts)
+- [Third-Party Integrations](#third-party-integrations)
 - [Security Model](#security-model)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -24,7 +25,7 @@ Beyond a single payment, TwinPay is built to grow with you: an on-chain spending
 
 ## Core Concept
 
-TwinPay never holds your funds and never signs on your behalf. The AI's job is limited to **proposing and auditing** — every transfer is reviewed and signed by you, inside your own Leather or Xverse wallet. On top of that, an on-chain Clarity contract (TwinPay Vault) lets you enforce your own spending limit at the protocol level, so your budget isn't just a UI suggestion.
+TwinPay never holds your funds and never signs on your behalf. The AI's job is limited to **proposing and auditing** — every transfer is reviewed and signed by you, inside your own Leather or Xverse wallet. On top of that, two on-chain Clarity contracts (TwinPay Vault and TwinPay Multisig Vault) let you enforce spending rules at the protocol level, so your budget isn't just a UI suggestion. Where a feature would otherwise require TwinPay to custody funds or run its own financial risk (like sBTC-collateralized lending), TwinPay instead integrates with an established, audited third-party protocol rather than rebuilding that risk surface itself.
 
 ## Features
 
@@ -46,7 +47,8 @@ TwinPay never holds your funds and never signs on your behalf. The AI's job is l
 - **BTC Yield** — a read-only panel showing live Proof-of-Transfer (PoX) network parameters (minimum stacking threshold, current cycle, network participation) and your personal stacking status, with links to pooled/liquid-stacking providers. TwinPay never moves your STX into stacking on your behalf.
 - **Recurring Payments** — schedule a repeating payment (rent, subscriptions, allowances) once; when it's due, TwinPay surfaces a "Run now" action that routes through the exact same AI audit + wallet-signature flow as a one-off payment.
 - **Trust Score** — a running score and day-streak computed from your approval history, laying the groundwork for an on-chain reputation system.
-- **Multisig Vault** & **sBTC Credit Line** — on the roadmap; see [Roadmap](#roadmap).
+- **Multisig Vault** — a shared, on-chain vault with N-of-M owner approval (live on Mainnet). Create a vault with up to 5 owners, deposit STX, propose a transfer, and require quorum approval before it executes. See [Smart Contracts](#smart-contracts).
+- **sBTC Credit Line** — borrow stablecoins against sBTC collateral without selling it, via [Zest Protocol](https://app.zestprotocol.com). TwinPay surfaces your sBTC balance and an illustrative borrow estimate, then routes you directly to Zest — it never custodies your collateral or runs its own lending pool. See [Third-Party Integrations](#third-party-integrations).
 
 ### Account
 - **Transaction Ledger** — full history with AI reasoning, network context, and a link to the Stacks Explorer for every transaction.
@@ -87,7 +89,9 @@ Live STX and SIP-010 balances, BNS resolution, and PoX network parameters are re
 TwinPayAI-main/
 ├── contract/
 │   ├── twinpay-vault.clar      # On-chain spending-limit vault (Clarity 2, deployed on Mainnet)
-│   └── DEPLOY.md               # Contract address, functions, and deployment notes
+│   ├── twinpay-multisig.clar   # On-chain N-of-M multisig vault (Clarity 3, deployed on Mainnet)
+│   ├── DEPLOY.md               # TwinPay Vault: contract address, functions, deployment notes
+│   └── DEPLOY-multisig.md      # TwinPay Multisig Vault: contract address, functions, deployment notes
 ├── public/                     # Static assets (logo, etc.)
 ├── src/
 │   ├── components/             # All views and UI components
@@ -100,8 +104,8 @@ TwinPayAI-main/
 │   │   ├── RecurringView.tsx   # Recurring payments scheduler
 │   │   ├── ReputationView.tsx  # Trust Score / streaks
 │   │   ├── MoreView.tsx        # "More" hub (replaces the old standalone Analytics tab)
-│   │   ├── MultisigView.tsx    # Roadmap placeholder
-│   │   ├── CreditLineView.tsx  # Roadmap placeholder
+│   │   ├── MultisigView.tsx    # Multisig Vault UI — create/deposit/propose/approve/execute (live Mainnet)
+│   │   ├── CreditLineView.tsx  # sBTC Credit Line — Zest Protocol integration panel
 │   │   ├── HistoryView.tsx     # Transaction ledger (table + mobile card list)
 │   │   ├── ContactsView.tsx    # Address book
 │   │   ├── RequestView.tsx     # Payment request link/QR generator
@@ -112,6 +116,7 @@ TwinPayAI-main/
 │   ├── services/
 │   │   ├── groqService.ts      # AI decision engine, insight digest, vault-limit suggestions
 │   │   ├── vaultService.ts     # Reads/encodes calls to the TwinPay Vault contract
+│   │   ├── multisigService.ts  # Reads/encodes calls to the TwinPay Multisig Vault contract
 │   │   └── recurringService.ts # Firestore CRUD for recurring payment schedules
 │   ├── lib/
 │   │   └── firebase.ts         # Firebase app/Firestore initialization
@@ -134,8 +139,8 @@ TwinPayAI-main/
 ### Installation
 
 ```bash
-git clone https://github.com/0xwars/TwinPayAI.git
-cd TwinPayAI
+git clone https://github.com/arawrdn/TwinPay-AI.git
+cd TwinPay-AI
 npm install
 ```
 
