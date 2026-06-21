@@ -183,9 +183,9 @@ export default function TransactionForm({
         </div>
 
         {/* Amount + Asset */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
           {/* Amount */}
-          <div className="col-span-2 space-y-2">
+          <div className="sm:col-span-2 space-y-2">
             <label className="block text-[9px] uppercase text-muted font-bold tracking-[0.25em]">Amount</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 font-mono text-sm select-none">$</span>
@@ -212,15 +212,15 @@ export default function TransactionForm({
           </div>
 
           {/* Token pills */}
-          <div className="col-span-3 space-y-2">
+          <div className="sm:col-span-3 space-y-2">
             <label className="block text-[9px] uppercase text-muted font-bold tracking-[0.25em]">Asset</label>
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
               {tokens.map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setToken(t)}
-                  className="flex-1 min-w-0 px-2 py-3 rounded-xl text-[10px] font-bold font-mono transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
+                  className="sm:flex-1 sm:min-w-0 px-2.5 py-3 rounded-xl text-[11px] font-bold font-mono transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                   style={
                     token === t
                       ? {
@@ -236,8 +236,8 @@ export default function TransactionForm({
                         }
                   }
                 >
-                  <TokenIcon token={t} className="w-3.5 h-3.5 shrink-0" />
-                  {t}
+                  <TokenIcon token={t} className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t}</span>
                 </button>
               ))}
             </div>
@@ -379,7 +379,7 @@ export default function TransactionForm({
           style={{ borderColor: "rgba(35,41,54,0.6)" }}>
           <div className="flex flex-col gap-0.5">
             <span className="text-[9px] uppercase text-muted font-bold tracking-widest">Est. Network Fee</span>
-            <span className="text-xs font-bold text-brand-green">~0.0005 STX</span>
+            <span className="text-xs font-bold text-brand-green">~0.01 STX</span>
           </div>
           <div className="flex flex-col gap-0.5 text-right">
             <span className="text-[9px] uppercase text-muted font-bold tracking-widest">Settlement</span>
