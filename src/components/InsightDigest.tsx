@@ -91,7 +91,24 @@ export default function InsightDigest({ profile, history, vault, address, varian
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
 
-  if (!address) return null;
+  if (!address) {
+    if (variant === 'compact') {
+      return (
+        <div className="panel-quiet ledger-strip rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-brass mb-2">
+            <Sparkles className="w-3 h-3" /> AI Digest
+          </div>
+          <p className="text-xs text-ghost italic">Connect your wallet to see your AI digest.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="panel-glass ledger-strip rounded-2xl p-6 sm:p-8 text-center">
+        <Sparkles className="w-8 h-8 text-brass/50 mx-auto mb-3" />
+        <p className="text-sm text-ghost">Connect your wallet to get a proactive spending and vault digest from your AI co-pilot.</p>
+      </div>
+    );
+  }
 
   const TrendIcon = digest?.trend === 'up' ? TrendingUp : digest?.trend === 'down' ? TrendingDown : Minus;
   const trendColor =
