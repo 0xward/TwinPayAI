@@ -6,22 +6,22 @@
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
-  Zap,
   ShieldCheck,
   Bot,
   Wallet,
   ArrowRight,
-  HelpCircle,
   AlertTriangle,
   Layers,
   ChevronDown,
   Globe,
   Lock,
-  Coins,
   Sparkles,
   Repeat,
+  Users2,
+  Landmark,
 } from "lucide-react";
 import { useState } from "react";
+import { TokenIcon, ProtocolIcon } from "./icons/AssetIcons";
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -50,12 +50,20 @@ const faqs = [
     a: "TwinPay Vault is a deployed Clarity contract on Stacks Mainnet that enforces a per-window STX spending limit on-chain. Once configured and active, every execute-transfer call is checked against your remaining allowance by the contract itself — not just by the app's interface.",
   },
   {
+    q: "What is the TwinPay Multisig Vault?",
+    a: "A separate, deployed Clarity contract for shared vaults — up to 5 owners with a configurable N-of-M approval threshold. Any owner can propose a transfer, but it only executes once enough owners approve.",
+  },
+  {
     q: "What is the AI Insight Digest?",
     a: "A proactive summary the AI generates from your recent activity and vault status — highlighting spending patterns, vault headroom, and one concrete suggestion. It's cached for a few hours so it feels like a check-in, not a spam notification.",
   },
   {
     q: "Does TwinPay manage my stacking for me?",
     a: "No. The BTC Yield panel is read-only — it shows live Proof-of-Transfer network parameters and your current stacking status, and links out to pool or liquid-stacking providers. TwinPay never moves your STX into stacking on your behalf.",
+  },
+  {
+    q: "How does the sBTC Credit Line work?",
+    a: "TwinPay doesn't run its own lending pool. The Credit Line panel shows your sBTC balance and a rough borrow estimate, then routes you directly to Zest Protocol — the largest sBTC-collateralized lending market on Stacks. TwinPay never holds your collateral.",
   },
   {
     q: "How do Recurring Payments execute?",
@@ -74,46 +82,63 @@ const faqs = [
 const steps = [
   {
     icon: Wallet,
-    color: "text-brand-green",
-    bg: "bg-brand-green/10 border-brand-green/30",
+    color: "text-brand-orange",
     title: "1. Connect Your Wallet",
-    desc: "Click 'Connect' in the top bar. Leather or Xverse will open and ask you to authorize TwinPay. Your keys stay in your wallet — always.",
+    desc: "Tap 'Connect' in the top bar. Leather or Xverse will open and ask you to authorize TwinPay. Your keys stay in your wallet — always.",
   },
   {
     icon: Bot,
-    color: "text-brand-gold",
-    bg: "bg-brand-gold/10 border-brand-gold/30",
+    color: "text-brass",
     title: "2. Set Your Budget & Personality",
-    desc: "Go to Settings (⚙️) and define your monthly budget and spending personality. The AI uses these to decide whether to approve or flag a transaction.",
+    desc: "Open Settings and define your monthly budget and spending personality. The AI uses these to decide whether to approve or flag a transaction.",
   },
   {
     icon: Layers,
     color: "text-blue-400",
-    bg: "bg-blue-400/10 border-blue-400/30",
     title: "3. Propose a Transaction",
-    desc: "Fill in the Description (what you're buying), Amount, Token (STX / sBTC / aeUSDC), and Recipient Stacks address (SP...). Click 'Initialize Analysis'.",
+    desc: "Describe what you're paying for, the amount, the asset (STX / sBTC / aeUSDC / USDCx), and the recipient. Tap 'Initialize AI Analysis'.",
   },
   {
     icon: ShieldCheck,
-    color: "text-brand-green",
-    bg: "bg-brand-green/10 border-brand-green/30",
+    color: "text-ok",
     title: "4. AI Audits & Decides",
-    desc: "TwinPay AI audits the recipient address, compares the amount to your budget, and returns a verdict: Approve, Modify, or Reject — with a confidence score and reason.",
+    desc: "TwinPay AI audits the recipient address, compares the amount to your budget, and returns a verdict — Approve, Modify, or Reject — with a confidence score and reason.",
   },
   {
     icon: Lock,
     color: "text-brand-orange",
-    bg: "bg-brand-orange/10 border-brand-orange/30",
     title: "5. Authorize & Sign",
-    desc: "If you agree with the AI decision, click 'Authorize & Execute'. Your Stacks wallet (Leather/Xverse) will open and show the exact transaction for you to review and sign.",
+    desc: "If you agree with the AI's decision, tap 'Authorize & Execute'. Your wallet opens and shows the exact transaction for you to review and sign.",
   },
   {
     icon: Globe,
     color: "text-purple-400",
-    bg: "bg-purple-400/10 border-purple-400/30",
     title: "6. Confirmed on Stacks",
-    desc: "Once signed, the transaction is broadcast to Stacks Mainnet and anchored to Bitcoin. You can track it in the Hiro Explorer via the Transaction History tab.",
+    desc: "Once signed, the transaction broadcasts to Stacks Mainnet and anchors to Bitcoin. Track it anytime from the History tab.",
   },
+];
+
+const features = [
+  { icon: Bot, label: "AI Decision Engine", desc: "Groq LLM analyzes every transaction", color: "text-brand-orange" },
+  { icon: ShieldCheck, label: "TwinPay Vault", desc: "Live Clarity contract enforcing limits", color: "text-blue-400" },
+  { icon: Users2, label: "Multisig Vault", desc: "N-of-M shared vault, live on Mainnet", color: "text-ok" },
+  { icon: Landmark, label: "sBTC Credit Line", desc: "Borrow via Zest Protocol, no custody", color: "text-brass" },
+  { icon: Sparkles, label: "AI Insight Digest", desc: "Proactive spending & vault check-ins", color: "text-brass" },
+  { icon: Repeat, label: "Recurring Payments", desc: "Schedule, then audit & sign when due", color: "text-brand-orange" },
+];
+
+const tokens = [
+  { key: "STX", name: "Stacks", note: "Native asset" },
+  { key: "sBTC", name: "sBTC", note: "1:1 Bitcoin-pegged" },
+  { key: "aeUSDC", name: "aeUSDC", note: "Bridged USDC" },
+  { key: "USDCx", name: "USDCx", note: "Stablecoin" },
+];
+
+const protocols = [
+  { key: "zest" as const, name: "Zest Protocol", note: "sBTC-backed lending" },
+  { key: "xverse" as const, name: "Xverse", note: "Wallet & pooled stacking" },
+  { key: "leather" as const, name: "Leather", note: "Wallet & in-app stacking" },
+  { key: "stackingdao" as const, name: "StackingDAO", note: "Liquid stacking" },
 ];
 
 export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
@@ -124,7 +149,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-3 sm:p-4">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -133,27 +157,25 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
             className="absolute inset-0 bg-black/85 backdrop-blur-md"
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 24 }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="relative w-full max-w-xl bg-[#0d1117] border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,255,140,0.08)] flex flex-col"
+            className="relative w-full max-w-xl panel-glass rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(255,122,24,0.10)] flex flex-col ledger-strip"
             style={{ maxHeight: "92vh" }}
           >
-            {/* Header */}
-            <div className="p-4 sm:p-6 border-b border-white/8 flex items-center justify-between shrink-0 bg-gradient-to-r from-brand-green/5 to-transparent">
+            <div className="p-4 sm:p-6 border-b border-white/8 flex items-center justify-between shrink-0 bg-gradient-to-r from-brand-orange/5 to-transparent">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-gradient-brand rounded-xl flex items-center justify-center font-black text-ink text-lg glow-brand-sm">
                   T
                 </div>
                 <div>
-                  <h2 className="text-sm font-black uppercase tracking-widest text-white">
+                  <h2 className="font-display text-base text-white">
                     TwinPay AI
                   </h2>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[8px] bg-brand-green/20 text-brand-green px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                    <span className="text-[8px] bg-brand-orange/20 text-brand-orange px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                       Beta v0.1
                     </span>
                     <span className="text-[8px] text-muted uppercase tracking-wider">
@@ -170,7 +192,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               </button>
             </div>
 
-            {/* Tabs */}
             <div className="flex border-b border-white/8 shrink-0 bg-black/20">
               {(["about", "guide", "faq"] as const).map((tab) => (
                 <button
@@ -178,7 +199,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all ${
                     activeTab === tab
-                      ? "text-brand-green border-b-2 border-brand-green bg-brand-green/5"
+                      ? "text-brand-orange border-b-2 border-brand-orange bg-brand-orange/5"
                       : "text-muted hover:text-ghost"
                   }`}
                 >
@@ -187,69 +208,73 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               ))}
             </div>
 
-            {/* Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {/* ── ABOUT TAB ── */}
               {activeTab === "about" && (
-                <div className="p-5 sm:p-7 space-y-6">
-                  {/* Hero description */}
-                  <div className="p-4 bg-brand-green/5 border border-brand-green/20 rounded-2xl">
-                    <p className="text-sm text-white font-bold leading-relaxed mb-2">
+                <div className="p-5 sm:p-7 space-y-7">
+                  <div className="p-5 rounded-2xl border border-brand-orange/20 bg-gradient-to-br from-brand-orange/8 to-transparent ledger-strip">
+                    <p className="font-display text-lg text-white mb-2">
                       What is TwinPay AI?
                     </p>
                     <p className="text-[11px] text-ghost leading-relaxed">
                       TwinPay AI is an <span className="text-white font-semibold">AI-powered payment agent</span> built on the{" "}
                       <span className="text-white font-semibold">Stacks blockchain</span> — a Layer 2 network secured by Bitcoin.
-                      Instead of manually constructing blockchain transactions, you describe what you want to pay for in plain English,
-                      and the AI audits, plans, and prepares the transaction for your wallet signature.
+                      Instead of manually constructing blockchain transactions, you describe what you want to pay for in plain
+                      English, and the AI audits, plans, and prepares the transaction for your wallet signature. Two on-chain
+                      Clarity contracts — a personal Vault and a shared Multisig Vault — let you enforce spending rules at the
+                      protocol level, not just in the app's interface.
                     </p>
                   </div>
 
-                  {/* Feature pills */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { icon: Bot, label: "AI Decision Engine", desc: "Groq LLM analyzes every transaction", color: "text-brand-green" },
-                      { icon: ShieldCheck, label: "TwinPay Vault", desc: "Live Clarity contract enforcing limits", color: "text-blue-400" },
-                      { icon: Coins, label: "Multi-Token", desc: "STX, sBTC, aeUSDC, USDCx", color: "text-brand-gold" },
-                      { icon: Zap, label: "Bitcoin Finality", desc: "Settled on Stacks → anchored to BTC", color: "text-brand-orange" },
-                      { icon: Sparkles, label: "AI Insight Digest", desc: "Proactive spending & vault check-ins", color: "text-brass" },
-                      { icon: Repeat, label: "Recurring Payments", desc: "Schedule, then audit & sign when due", color: "text-brand-orange" },
-                    ].map(({ icon: Icon, label, desc, color }) => (
-                      <div key={label} className="p-3 bg-white/4 border border-white/8 rounded-xl">
-                        <Icon className={`w-4 h-4 ${color} mb-2`} />
-                        <p className="text-[10px] font-bold text-white mb-0.5">{label}</p>
-                        <p className="text-[9px] text-muted leading-relaxed">{desc}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Tech stack */}
                   <div>
                     <p className="text-[9px] uppercase font-bold text-muted tracking-widest mb-3">
-                      Built With
+                      What's Inside
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        "React + TypeScript",
-                        "Stacks Connect",
-                        "Clarity Smart Contracts",
-                        "Groq LLM",
-                        "Firebase",
-                        "Hiro API",
-                        "Tailwind CSS",
-                        "Vite",
-                      ].map((tech) => (
-                        <span
-                          key={tech}
-                          className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono text-ghost"
-                        >
-                          {tech}
-                        </span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {features.map(({ icon: Icon, label, desc, color }) => (
+                        <div key={label} className="p-3 bg-white/4 border border-white/8 rounded-xl">
+                          <Icon className={`w-4 h-4 ${color} mb-2`} />
+                          <p className="text-[10px] font-bold text-white mb-0.5">{label}</p>
+                          <p className="text-[9px] text-muted leading-relaxed">{desc}</p>
+                        </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Risk disclosure */}
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-muted tracking-widest mb-3">
+                      Tokens Supported
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5 mb-5">
+                      {tokens.map((t) => (
+                        <div key={t.key} className="flex items-center gap-2.5 p-2.5 bg-white/4 border border-white/8 rounded-xl">
+                          <TokenIcon token={t.key} className="w-7 h-7 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-white truncate">{t.name}</p>
+                            <p className="text-[8px] text-muted truncate">{t.note}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[9px] uppercase font-bold text-muted tracking-widest mb-3">
+                      Protocols We Connect To
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {protocols.map((p) => (
+                        <div key={p.key} className="flex items-center gap-2.5 p-2.5 bg-white/4 border border-white/8 rounded-xl">
+                          <ProtocolIcon protocol={p.key} className="w-7 h-7 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-white truncate">{p.name}</p>
+                            <p className="text-[8px] text-muted truncate">{p.note}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-muted mt-3 leading-relaxed italic">
+                      TwinPay never custodies your funds on these protocols — it audits and links out; you always sign directly.
+                    </p>
+                  </div>
+
                   <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
                     <div className="flex items-center gap-2 mb-2">
                       <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
@@ -269,20 +294,17 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </div>
               )}
 
-              {/* ── GUIDE TAB ── */}
               {activeTab === "guide" && (
-                <div className="p-5 sm:p-7 space-y-4">
+                <div className="p-5 sm:p-7 space-y-3">
                   <p className="text-[10px] text-muted uppercase tracking-widest font-bold mb-4">
                     Step-by-step Guide
                   </p>
-                  {steps.map(({ icon: Icon, color, bg, title, desc }) => (
+                  {steps.map(({ icon: Icon, color, title, desc }) => (
                     <div
                       key={title}
-                      className={`flex gap-4 p-4 rounded-xl border ${bg} bg-opacity-5`}
+                      className="flex gap-4 p-4 rounded-xl border border-white/8 bg-white/4"
                     >
-                      <div
-                        className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${bg}`}
-                      >
+                      <div className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center shrink-0">
                         <Icon className={`w-4 h-4 ${color}`} />
                       </div>
                       <div>
@@ -303,7 +325,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                 </div>
               )}
 
-              {/* ── FAQ TAB ── */}
               {activeTab === "faq" && (
                 <div className="p-5 sm:p-7 space-y-2">
                   <p className="text-[9px] uppercase font-bold text-muted tracking-widest mb-4">
@@ -343,7 +364,6 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
               )}
             </div>
 
-            {/* Footer */}
             <div className="p-4 sm:p-5 border-t border-white/8 flex items-center justify-between shrink-0 bg-black/30">
               <span className="text-[8px] font-mono text-muted uppercase tracking-widest">
                 TwinPay AI // Beta v0.1.0 // Stacks Mainnet
