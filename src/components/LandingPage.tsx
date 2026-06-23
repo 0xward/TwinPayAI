@@ -270,7 +270,7 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
             onClick={onEnterApp}
             className="flex items-center gap-2 px-4 h-9 bg-gradient-to-r from-[#FFB066] via-[#FF7A18] to-[#C2410C] text-[#07090D] rounded-lg text-[10px] font-black uppercase tracking-wider shadow-[0_0_14px_rgba(255,122,24,0.3)] hover:shadow-[0_0_22px_rgba(255,122,24,0.5)] hover:scale-105 transition-all active:scale-95"
           >
-            Launch App <ArrowRight className="w-3.5 h-3.5" />
+            Connect Stacks <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </nav>
@@ -335,14 +335,12 @@ export default function LandingPage({ onEnterApp, onAbout }: LandingPageProps) {
             Launch App
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
-          <a
-            href="https://github.com/0xward/TwinPayAI"
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={onAbout}
             className="flex items-center gap-2 px-6 py-4 bg-white/5 border border-white/10 text-white font-bold uppercase text-xs tracking-widest rounded-xl hover:bg-white/10 transition-all"
           >
-            <Github className="w-4 h-4" /> View Source
-          </a>
+            <Info className="w-4 h-4" /> Learn TwinPay
+          </button>
         </motion.div>
 
         {/* Floating cards */}
