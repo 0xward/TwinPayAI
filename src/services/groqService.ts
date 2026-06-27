@@ -3,8 +3,14 @@
  */
 
 import { TransactionRecord } from '../types';
+import { TwinPayClient } from '@0xward/twinpayai-client';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
+
+// Single shared client instance used to estimate on-chain fees before the
+// AI makes its approve/modify/reject decision, instead of relying on a
+// hardcoded fee assumption in the prompt.
+const twinPayClient = new TwinPayClient({ network: "mainnet" });
 
 const MODEL_LIST = [
   "llama-3.3-70b-versatile",
@@ -37,15 +43,26 @@ export async function makeDecision(
           .join("\n")}`
       : "";
 
+  // Dynamically estimate the network fee for this transaction amount via
+  // the TwinPay client SDK, instead of assuming a fixed ~0.01 STX fee.
+  let feeContext = "Estimated fee: ~0.01 STX (fallback).";
+  try {
+    const feeEstimate = twinPayClient.estimateFee(tx.price);
+    feeContext = `Estimated fee: ${feeEstimate.estimatedFeeStx} STX (≈$${feeEstimate.estimatedFeeUsd} USD) on ${feeEstimate.network}.`;
+  } catch (err) {
+    console.warn("[TwinPayClient] estimateFee failed, using fallback fee context.", err);
+  }
+
   return callGroq(
     `You are TwinPay AI, a financial AI for Stacks Mainnet.
 User profile: monthly budget $${profile.monthly_budget}, personality: ${profile.personality}, current STX balance: ${profile.current_balance.toFixed(6)} STX.
 Transaction: buy "${tx.item}" for $${tx.price} using ${tx.token}, recipient: ${tx.recipient}.${onChainInfo}${historyContext}
+${feeContext}
 
 Using the transaction history above (if provided), detect any spending anomalies or patterns and factor them into your decision. Give personalized advice.
 
 Decide: approve, modify, or reject.
-- If user balance >= price + fee (~0.01 STX), approve.
+- If user balance >= price + fee (see estimated fee above), approve.
 - If balance insufficient but close, suggest a modified lower amount.
 - Reject only if far over budget or highly suspicious.
 Security audit: validate recipient address format. New addresses are acceptable.
